@@ -12,7 +12,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Question marks for unsure cells: right click a flag again
 - Chording: click a number with the matching number of flags to open all its neighbours
 - Touch support: long-press to flag, or toggle flag mode
-- Best times per difficulty, saved in the browser; the 🏆 button lists all of them
+- Best times per difficulty, saved in the browser and always shown below the board
 - Automatic light and dark theme
 - English and German interface: follows the browser language, switchable with the DE/EN toggle in the top right corner
 

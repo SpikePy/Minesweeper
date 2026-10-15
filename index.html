@@ -85,11 +85,11 @@
 
   .message { min-height: 1.5em; margin-top: 12px; text-align: center; font-weight: 600; }
   .help { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 14px; max-width: 520px; line-height: 1.5; }
-  .best { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 4px; }
-  #scoresBtn { margin-top: 12px; }
-  .scores { margin-top: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  .scores { margin-top: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
+  .scores caption { color: var(--muted); font-size: .85rem; padding-bottom: 4px; }
   .scores td { padding: 4px 6px; }
+  .scores tr.current td { color: var(--accent); }
   .scores td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 20px; }
 </style>
 </head>
@@ -126,9 +126,7 @@
   </div>
 
   <div class="message" id="message"></div>
-  <div class="best" id="best"></div>
-  <button id="scoresBtn" data-i18n="scores" aria-expanded="false" aria-controls="scores"></button>
-  <table class="scores" id="scores" hidden><tbody></tbody></table>
+  <table class="scores" id="scores"><caption data-i18n="scores"></caption><tbody></tbody></table>
   <div class="help" data-i18n="help"></div>
 
 <script>
@@ -149,7 +147,7 @@
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher.',
       lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} Sekunden! 🎉`,
-      newBest: ' Neue Bestzeit!', scores: '🏆 Bestzeiten', best: b => `Bestzeit: ${b} s`,
+      newBest: ' Neue Bestzeit!', scores: '🏆 Bestzeiten',
     },
     en: {
       difficulty: 'Difficulty', easy: 'Beginner (9×9, 10)', medium: 'Intermediate (16×16, 40)',
@@ -160,13 +158,13 @@
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe.',
       lost: 'Boom! You lost.', won: t => `You won in ${t} seconds! 🎉`,
-      newBest: ' New best time!', scores: '🏆 Best times', best: b => `Best time: ${b} s`,
+      newBest: ' New best time!', scores: '🏆 Best times',
     },
   };
 
   const $ = id => document.getElementById(id);
   const boardEl = $('board'), minesEl = $('mines'), timerEl = $('timer'),
-        resetBtn = $('reset'), msgEl = $('message'), bestEl = $('best'),
+        resetBtn = $('reset'), msgEl = $('message'),
         diffSel = $('difficulty'), flagBtn = $('flagMode'), customBox = $('customBox');
 
   let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, flagMode = false, mode = 'easy', lang, msgKey = null, msgArg;
@@ -333,25 +331,17 @@
     showBest();
   }
 
+  // Bestzeiten aller Stufen; die aktuelle Stufe ist hervorgehoben
+  const scoresEl = $('scores');
   function showBest() {
-    const b = mode !== 'custom' && store.get('ms-best-' + mode);
-    bestEl.textContent = b ? T('best', b) : '';
-    renderScores();
-  }
-
-  const scoresEl = $('scores'), scoresBtn = $('scoresBtn');
-  function renderScores() {
     scoresEl.tBodies[0].innerHTML = '';
     for (const m of Object.keys(PRESETS)) {
       const row = scoresEl.tBodies[0].insertRow(), b = store.get('ms-best-' + m);
+      row.classList.toggle('current', m === mode);
       row.insertCell().textContent = T(m);
       row.insertCell().textContent = b === null ? '–' : b + ' s';
     }
   }
-  scoresBtn.addEventListener('click', () => {
-    scoresEl.hidden = !scoresEl.hidden;
-    scoresBtn.setAttribute('aria-expanded', !scoresEl.hidden);
-  });
 
   const elapsed = () => Math.floor((Date.now() - startTime) / 1000);
   function startTimer() {
