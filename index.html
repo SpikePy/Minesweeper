@@ -6,6 +6,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Minesweeper</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#eef1f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151c" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Minesweeper">
 <style>
   :root {
     --bg: #eef1f5;
@@ -55,6 +62,7 @@
   button:hover, select:hover { border-color: var(--accent); }
   button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .tool { width: 40px; padding: 8px 0; font-weight: 800; }
+  .tool[hidden] { display: none; }
 
   .custom { display: none; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
   .custom.show { display: flex; }
@@ -69,12 +77,12 @@
   .face { font-size: 1.6rem; padding: 2px 10px; line-height: 1.2; }
 
   .board-wrap { overflow: auto; max-width: calc(100vw - 58px); }
-  .board { display: grid; gap: 2px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+  .board { display: grid; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
   .cell {
-    width: var(--size); height: var(--size); border-radius: 4px; background: var(--cell);
+    width: var(--size); height: var(--size); background: var(--cell);
     display: flex; align-items: center; justify-content: center;
     font-weight: 800; font-size: calc(var(--size) * .55); cursor: pointer;
-    transition: background .08s;
+    box-shadow: inset -1px -1px 0 var(--panel);   /* Trennlinie gehört zur Zelle, also klickbar */
   }
   .cell:not(.open):hover { background: var(--cell-hover); }
   .cell.open { background: var(--cell-open); cursor: default; }
@@ -133,6 +141,7 @@
     </select>
     <button id="flagMode" class="tool" data-i18n-title="flagModeTitle" data-i18n-aria="flagModeTitle" aria-pressed="false">🚩</button>
     <button id="qMode" class="tool" data-i18n-title="qModeTitle" data-i18n-aria="qModeTitle" aria-pressed="false">?</button>
+    <button id="install" class="tool" data-i18n-title="install" data-i18n-aria="install" hidden>📲</button>
   </div>
 
   <div class="custom" id="customBox">
@@ -185,7 +194,8 @@
       width: 'Breite', height: 'Höhe', mines: 'Minen', start: 'Start', newGame: 'Neues Spiel',
       help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge, nochmal: Fragezeichen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
-            'Mit einem Seed lässt sich ein Spielfeld erneut spielen.',
+            'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
+            'Mit Seed und gleichem ersten Feld lässt sich ein Spielfeld erneut spielen.',
       lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} ${t === 1 ? 'Sekunde' : 'Sekunden'}! 🎉`,
       newBest: ' Top 5!', scores: '🏆 Bestzeiten',
       topFive: 'Top 5! Dein Name:', yourName: 'Name', save: 'Speichern',
@@ -193,6 +203,8 @@
       player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
       seed: 'Seed', copySeed: 'Seed kopieren', enterSeed: 'Seed eingeben', playSeed: 'Seed spielen',
       copied: 'Kopiert!', invalidSeed: 'Ungültiger Seed.', replayNote: 'Wiederholung – zählt nicht für Bestzeiten',
+      mayGuess: 'So viele Minen: hier muss eventuell geraten werden.',
+      install: 'Als App installieren',
     },
     en: {
       difficulty: 'Difficulty', easy: 'Beginner (9×9, 10)', medium: 'Intermediate (16×16, 40)',
@@ -202,7 +214,8 @@
       width: 'Width', height: 'Height', mines: 'Mines', start: 'Start', newGame: 'New game',
       help: 'Left click/tap: open · Right click/long press: flag, again: question mark · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
-            'Enter a seed to replay a board.',
+            'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
+            'Enter a seed and click the same first cell to replay a board.',
       lost: 'Boom! You lost.', won: t => `You won in ${t} ${t === 1 ? 'second' : 'seconds'}! 🎉`,
       newBest: ' Top 5!', scores: '🏆 Best times',
       topFive: 'Top 5! Your name:', yourName: 'Name', save: 'Save',
@@ -210,6 +223,8 @@
       player: n => `👤 ${n}`, changeName: 'Name for future entries:',
       seed: 'Seed', copySeed: 'Copy seed', enterSeed: 'Enter seed', playSeed: 'Play seed',
       copied: 'Copied!', invalidSeed: 'Invalid seed.', replayNote: 'Replay – doesn\'t count for best times',
+      mayGuess: 'So many mines that this board may need a guess.',
+      install: 'Install as app',
     },
   };
 
@@ -251,7 +266,7 @@
 
   function cellSize() {
     const avail = Math.min(window.innerWidth, 1100) - 60;
-    return Math.max(24, Math.min(36, Math.floor(avail / W) - 2));
+    return Math.max(24, Math.min(36, Math.floor(avail / W)));
   }
 
   // --- Seeds: Stufe + 6 Zeichen, z. B. B-K3F9QX oder C20x12x35-K3F9QX ---
@@ -301,7 +316,6 @@
     replay = !!p;
     seed = p ? p.seed : levelPrefix() + '-' + randomCode();
     cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, q: false, n: 0 }));
-    placeMines(seededRandom(seed));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
     resetBtn.textContent = '🙂'; setMessage(null);
     timerEl.textContent = '⏱ 0';
@@ -341,9 +355,17 @@
     return out;
   };
 
-  // Minen stehen allein durch den Seed fest (der erste Klick ist daher nicht garantiert sicher)
-  function placeMines(rng) {
-    const pool = cells.map((_, i) => i);
+  // --- Spielfeld ohne Raten ---
+  // Die Minen werden erst beim ersten Klick gelegt: das Feld hängt von Seed und erstem Feld ab.
+  // Bleibt der Löser stecken, wird eine Mine am Rand des gelösten Bereichs verschoben und neu
+  // gelöst, bis das Feld allein mit den Zahlen und dem Minenzähler lösbar ist (deterministisch).
+  // Rechenbudget wächst nicht mit der Feldgröße, damit der erste Klick schnell bleibt
+  const MAX_STEPS = 400, PERTURBS = 5, BUDGET = 150000;
+  let solveState;   // Zustand des letzten solve()-Laufs, für perturb()
+
+  function placeMines(rng, exclude) {
+    cells.forEach(c => { c.mine = false; });
+    const pool = cells.map((_, i) => i).filter(i => !exclude.has(i));
     for (let k = 0; k < M; k++) {
       const r = k + Math.floor(rng() * (pool.length - k));
       [pool[k], pool[r]] = [pool[r], pool[k]];
@@ -351,6 +373,164 @@
     }
     cells.forEach((c, i) => { c.n = neighbors(i).filter(j => cells[j].mine).length; });
   }
+
+  function generate(start) {
+    const NB = cells.map((_, i) => neighbors(i));
+    const exclude = new Set([start]);
+    if (W * H - 9 >= M) NB[start].forEach(j => exclude.add(j));   // Startfeld ist eine 0
+    const rng = seededRandom(`${seed}/${start}`);
+    placeMines(rng, exclude);
+    let best = -1, bestMines = null;
+    const steps = Math.min(MAX_STEPS, Math.ceil(BUDGET / (W * H)));
+    for (let t = 0; t < steps; t++) {
+      const n = solve(start, NB);
+      if (n === W * H - M) return true;
+      if (n > best) { best = n; bestMines = cells.map(c => c.mine); }
+      // nach ein paar Verschiebungen ohne Erfolg (oder in einer Sackgasse) neu würfeln
+      if ((t + 1) % PERTURBS === 0 || !perturb(rng, exclude, NB)) placeMines(rng, exclude);
+    }
+    // Nur bei extrem dichten eigenen Feldern: das Feld nehmen, das am weitesten lösbar war
+    cells.forEach((c, i) => { c.mine = bestMines[i]; });
+    cells.forEach((c, i) => { c.n = NB[i].filter(j => cells[j].mine).length; });
+    return false;
+  }
+
+  // Verschiebt eine Mine: ein zufälliges unentschiedenes Randfeld tauscht mit einem Feld im
+  // verdeckten Inneren (Mine raus bzw. Mine rein), notfalls mit einem anderen Randfeld.
+  // Liefert false, wenn nichts mehr geht.
+  function perturb(rng, exclude, NB) {
+    const st = solveState, edge = [], inner = [];
+    cells.forEach((_, i) => {
+      if (st[i] || exclude.has(i)) return;
+      (NB[i].some(j => st[j] === 1) ? edge : inner).push(i);
+    });
+    const pick = list => list[Math.floor(rng() * list.length)];
+    for (let tries = 0; tries < 2 && edge.length; tries++) {
+      const f = pick(edge), wantMine = !cells[f].mine;
+      let other = inner.filter(i => cells[i].mine === wantMine);
+      if (!other.length) other = edge.filter(i => cells[i].mine === wantMine);
+      if (!other.length) continue;
+      const g = pick(other);
+      cells[f].mine = wantMine; cells[g].mine = !wantMine;
+      for (const i of [f, g, ...NB[f], ...NB[g]]) cells[i].n = NB[i].filter(j => cells[j].mine).length;
+      return true;
+    }
+    return false;
+  }
+
+  // Probiert alle Minenverteilungen auf `vars`, die zu den Zahlen passen
+  // (cons: [{ need, u: verdeckte Felder }]). Liefert je Feld, ob es Mine bzw. frei sein kann,
+  // und die möglichen Minenzahlen; null, wenn es zu viele Möglichkeiten sind.
+  function enumerate(vars, cons, maxK, ok) {
+    const n = vars.length, idx = new Map(vars.map((v, j) => [v, j]));
+    const of = vars.map(() => []);
+    cons.forEach((c, ci) => c.u.forEach(v => of[idx.get(v)].push(ci)));
+    const have = new Int32Array(cons.length), left = Int32Array.from(cons, c => c.u.length);
+    const a = new Int8Array(n), canMine = new Uint8Array(n), canSafe = new Uint8Array(n), ks = new Set();
+    let nodes = 0;
+    const rec = (j, k) => {
+      if (++nodes > 20000) throw enumerate;
+      if (j === n) {
+        if (!ok(k)) return;
+        ks.add(k);
+        for (let t = 0; t < n; t++) (a[t] ? canMine : canSafe)[t] = 1;
+        return;
+      }
+      for (let v = 0; v <= 1; v++) {
+        if (k + v > maxK) break;
+        let fine = true;
+        for (const ci of of[j]) { left[ci]--; have[ci] += v; }
+        for (const ci of of[j]) if (have[ci] > cons[ci].need || have[ci] + left[ci] < cons[ci].need) fine = false;
+        if (fine) { a[j] = v; rec(j + 1, k + v); }
+        for (const ci of of[j]) { left[ci]++; have[ci] -= v; }
+      }
+    };
+    try { rec(0, 0); } catch (e) { if (e === enumerate) return null; throw e; }
+    return { canMine, canSafe, ks };
+  }
+
+  // Löst das Feld nur mit dem, was ein Spieler sieht; liefert die Zahl der geöffneten Felder
+  function solve(start, NB) {
+    const N = W * H, st = solveState = new Int8Array(N);   // 0 verdeckt, 1 offen, 2 als Mine erkannt
+    let opened = 0, found = 0;
+    const open = i => {
+      const stack = [i];
+      while (stack.length) {
+        const j = stack.pop();
+        if (st[j]) continue;
+        st[j] = 1; opened++;
+        if (!cells[j].n) for (const k of NB[j]) if (!st[k]) stack.push(k);
+      }
+    };
+    const mark = i => { if (!st[i]) { st[i] = 2; found++; } };
+    // Zahl i: verdeckte Nachbarn und wie viele Minen davon noch fehlen
+    const info = i => {
+      const u = [];
+      let m = 0;
+      for (const k of NB[i]) { if (!st[k]) u.push(k); else if (st[k] === 2) m++; }
+      return { u, need: cells[i].n - m };
+    };
+    // Ergebnis einer Fallunterscheidung anwenden
+    const apply = (vars, r) => {
+      let p = false;
+      vars.forEach((v, j) => {
+        if (st[v]) return;
+        if (!r.canMine[j]) { open(v); p = true; } else if (!r.canSafe[j]) { mark(v); p = true; }
+      });
+      return p;
+    };
+    open(start);
+
+    while (opened < N - M) {
+      let progress = false;
+      const frontier = [];
+      for (let i = 0; i < N; i++) if (st[i] === 1 && cells[i].n) frontier.push(i);
+
+      // 1. Einzelne Zahl: alle verdeckten Nachbarn sind frei bzw. alle sind Minen
+      for (const i of frontier) {
+        const { u, need } = info(i);
+        if (!u.length) continue;
+        if (need === 0) { u.forEach(open); progress = true; }
+        else if (need === u.length) { u.forEach(mark); progress = true; }
+      }
+      if (progress) continue;
+
+      // 2. Benachbarte Zahlen gemeinsam: alle Verteilungen um eine Zahl herum durchprobieren
+      const R = M - found;
+      for (const i of frontier) {
+        if (!info(i).u.length) continue;
+        const group = new Set([i]);
+        for (const v of info(i).u) for (const j of NB[v]) if (st[j] === 1 && cells[j].n) group.add(j);
+        const cons = [...group].map(info).filter(c => c.u.length);
+        const vars = [...new Set(cons.flatMap(c => c.u))];
+        const r = enumerate(vars, cons, R, () => true);
+        if (r && apply(vars, r)) progress = true;
+      }
+      if (progress) continue;
+
+      // 3. Ganzer Rand zusammen mit dem Minenzähler (für das Ende des Spiels)
+      const cons = frontier.map(info).filter(c => c.u.length);
+      const vars = [...new Set(cons.flatMap(c => c.u))];
+      let hidden = 0;
+      for (let i = 0; i < N; i++) if (!st[i]) hidden++;
+      const inner = hidden - vars.length;   // verdeckte Felder ohne Zahl daneben
+      if (vars.length > 40) break;
+      const r = enumerate(vars, cons, R, k => R - k >= 0 && R - k <= inner);
+      if (!r || !r.ks.size) break;
+      progress = apply(vars, r);
+      if (inner) {
+        const ks = [...r.ks], vs = new Set(vars);
+        const innerMine = ks.some(k => R - k > 0), innerSafe = ks.some(k => R - k < inner);
+        for (let i = 0; i < N; i++) {
+          if (st[i] || vs.has(i)) continue;
+          if (!innerMine) { open(i); progress = true; } else if (!innerSafe) { mark(i); progress = true; }
+        }
+      }
+      if (!progress) break;
+    }
+    return opened;
+  }
+  // --- Ende Spielfeld ohne Raten ---
 
   function reveal(i) {
     const stack = [i];
@@ -416,7 +596,7 @@
     if (tapMode) return setMark(i, tapMode);
     const c = cells[i];
     if (c.flag) return;
-    if (firstClick) { firstClick = false; startTimer(); }
+    if (firstClick) { firstClick = false; if (!generate(i)) setMessage('mayGuess', {}); startTimer(); }
     if (c.open) chord(i); else reveal(i);
   }
 
@@ -556,36 +736,44 @@
   function stopTimer() { clearInterval(timer); timer = null; }
   function updateMines() { minesEl.textContent = '💣 ' + (M - flags); }
 
-  // --- Eingabe: Maus ---
-  boardEl.addEventListener('click', e => {
-    if (e.target.dataset.i === undefined || suppressClick) return;
-    handlePrimary(+e.target.dataset.i);
-  });
-  boardEl.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    if (e.target.dataset.i !== undefined) {
-      const i = +e.target.dataset.i;
-      if (cells[i].open) chord(i); else toggleFlag(i);
-    }
-  });
-  boardEl.addEventListener('mousedown', e => { if (!gameOver && e.button === 0) resetBtn.textContent = '😮'; });
-  document.addEventListener('mouseup', () => { if (!gameOver) resetBtn.textContent = '🙂'; });
+  // --- Eingabe: Maus/Stift reagieren schon beim Drücken, Touch beim Loslassen ---
+  // (Touch braucht das Loslassen, um Tippen von Long-Press und Scrollen zu unterscheiden)
+  const cellIndex = e => e.target.dataset?.i === undefined ? -1 : +e.target.dataset.i;
+  let touch = null;   // { id, i, x, y, timer, done }
 
-  // --- Eingabe: Touch (Long-Press = Flagge) ---
-  let pressTimer = null, suppressClick = false;
-  boardEl.addEventListener('touchstart', e => {
-    const t = e.target;
-    if (t.dataset.i === undefined) return;
-    suppressClick = false;
-    pressTimer = setTimeout(() => {
-      suppressClick = true;
-      const i = +t.dataset.i;
+  boardEl.addEventListener('pointerdown', e => {
+    const i = cellIndex(e);
+    if (i < 0) return;
+    if (e.pointerType !== 'touch') {
+      if (e.button === 0) {
+        if (!gameOver) resetBtn.textContent = '😮';
+        handlePrimary(i);
+      } else if (e.button === 2) {
+        if (cells[i].open) chord(i); else toggleFlag(i);
+      }
+      return;
+    }
+    if (touch) return;   // nur ein Finger zählt
+    touch = { id: e.pointerId, i, x: e.clientX, y: e.clientY, done: false };
+    touch.timer = setTimeout(() => {
+      touch.done = true;
       if (!cells[i].open) toggleFlag(i);
-    }, 400);
-  }, { passive: true });
-  const cancelPress = () => { clearTimeout(pressTimer); };
-  boardEl.addEventListener('touchend', () => { cancelPress(); setTimeout(() => suppressClick = false, 50); });
-  boardEl.addEventListener('touchmove', cancelPress, { passive: true });
+    }, 350);
+  });
+  boardEl.addEventListener('pointermove', e => {
+    if (touch && e.pointerId === touch.id && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 10) endTouch();
+  });
+  boardEl.addEventListener('pointerup', e => {
+    if (!touch || e.pointerId !== touch.id) return;
+    const { i, done } = touch;
+    endTouch();
+    if (!done) handlePrimary(i);
+  });
+  boardEl.addEventListener('pointercancel', e => { if (touch && e.pointerId === touch.id) endTouch(); });
+  function endTouch() { clearTimeout(touch.timer); touch = null; }
+
+  boardEl.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('pointerup', () => { if (!gameOver) resetBtn.textContent = '🙂'; });
 
   // --- UI ---
   resetBtn.addEventListener('click', () => newGame());
@@ -643,6 +831,19 @@
   customBox.classList.toggle('show', mode === 'custom');
   if (mode === 'custom') applyCustom(); else newGame();
   loadScores();
+
+  // --- Installierbar als App (PWA) ---
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  const installBtn = $('install');
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; installBtn.hidden = false; });
+  window.addEventListener('appinstalled', () => { installPrompt = null; installBtn.hidden = true; });
+  installBtn.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null; installBtn.hidden = true;
+  });
 })();
 </script>
 </body>
