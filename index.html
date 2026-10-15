@@ -88,7 +88,6 @@
   .cell.open { background: var(--cell-open); cursor: default; }
   .cell.mine-hit { background: var(--mine); }
   .cell.wrong { background: var(--cell-open); color: var(--mine); }
-  .cell.q { color: var(--muted); }
   .n1{color:var(--n1)}.n2{color:var(--n2)}.n3{color:var(--n3)}.n4{color:var(--n4)}
   .n5{color:var(--n5)}.n6{color:var(--n6)}.n7{color:var(--n7)}.n8{color:var(--n8)}
 
@@ -140,7 +139,6 @@
       <option value="custom" data-i18n="custom"></option>
     </select>
     <button id="flagMode" class="tool" data-i18n-title="flagModeTitle" data-i18n-aria="flagModeTitle" aria-pressed="false">🚩</button>
-    <button id="qMode" class="tool" data-i18n-title="qModeTitle" data-i18n-aria="qModeTitle" aria-pressed="false">?</button>
     <button id="install" class="tool" data-i18n-title="install" data-i18n-aria="install" hidden>📲</button>
   </div>
 
@@ -190,9 +188,8 @@
       difficulty: 'Schwierigkeit', easy: 'Anfänger (9×9, 10)', medium: 'Fortgeschritten (16×16, 40)',
       hard: 'Experte (30×16, 99)', custom: 'Benutzerdefiniert',
       flagModeTitle: 'Flaggen-Modus: Tippen setzt/entfernt Flaggen (F)',
-      qModeTitle: 'Fragezeichen-Modus: Tippen setzt/entfernt Fragezeichen (Q)',
       width: 'Breite', height: 'Höhe', mines: 'Minen', start: 'Start', newGame: 'Neues Spiel',
-      help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge, nochmal: Fragezeichen · ' +
+      help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge setzen/entfernen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
             'Mit Seed und gleichem ersten Feld lässt sich ein Spielfeld erneut spielen.',
@@ -210,9 +207,8 @@
       difficulty: 'Difficulty', easy: 'Beginner (9×9, 10)', medium: 'Intermediate (16×16, 40)',
       hard: 'Expert (30×16, 99)', custom: 'Custom',
       flagModeTitle: 'Flag mode: tap to set/remove flags (F)',
-      qModeTitle: 'Question mark mode: tap to set/remove question marks (Q)',
       width: 'Width', height: 'Height', mines: 'Mines', start: 'Start', newGame: 'New game',
-      help: 'Left click/tap: open · Right click/long press: flag, again: question mark · ' +
+      help: 'Left click/tap: open · Right click/long press: set/remove flag · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
             'Enter a seed and click the same first cell to replay a board.',
@@ -231,9 +227,9 @@
   const $ = id => document.getElementById(id);
   const boardEl = $('board'), minesEl = $('mines'), timerEl = $('timer'),
         resetBtn = $('reset'), msgEl = $('message'),
-        diffSel = $('difficulty'), flagBtn = $('flagMode'), qBtn = $('qMode'), customBox = $('customBox');
+        diffSel = $('difficulty'), flagBtn = $('flagMode'), customBox = $('customBox');
 
-  let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, tapMode = null, mode = 'easy', lang, msgKey = null, msgArg,
+  let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, flagMode = false, mode = 'easy', lang, msgKey = null, msgArg,
       seed, replay = false, endedAt = 0;
 
   // --- Persistenz (optional, fehlertolerant) ---
@@ -315,7 +311,7 @@
     if (mode !== 'custom') ({ w: W, h: H, m: M } = PRESETS[mode]);
     replay = !!p;
     seed = p ? p.seed : levelPrefix() + '-' + randomCode();
-    cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, q: false, n: 0 }));
+    cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
     resetBtn.textContent = '🙂'; setMessage(null);
     timerEl.textContent = '⏱ 0';
@@ -558,23 +554,8 @@
   function toggleFlag(i) {
     const c = cells[i];
     if (c.open || gameOver) return;
-    // Zyklus: leer → Flagge → Fragezeichen → leer
-    if (c.flag) { c.flag = false; c.q = true; flags--; }
-    else if (c.q) c.q = false;
-    else { c.flag = true; flags++; }
-    drawCell(i); updateMines();
-    if (navigator.vibrate) navigator.vibrate(15);
-  }
-
-  // Tipp-Modus (Touch): Flagge bzw. Fragezeichen direkt setzen oder entfernen
-  function setMark(i, kind) {
-    const c = cells[i];
-    if (c.open || gameOver) return;
-    if (c.flag) flags--;
-    const on = !c[kind];
-    c.flag = c.q = false;
-    c[kind] = on;
-    if (c.flag) flags++;
+    c.flag = !c.flag;
+    flags += c.flag ? 1 : -1;
     drawCell(i); updateMines();
     if (navigator.vibrate) navigator.vibrate(15);
   }
@@ -588,13 +569,12 @@
       if (c.mine) el.textContent = '💣';
       else if (c.n) { el.textContent = c.n; el.classList.add('n' + c.n); }
     } else if (c.flag) el.textContent = '🚩';
-    else if (c.q) { el.textContent = '?'; el.classList.add('q'); }
   }
 
   function handlePrimary(i) {
     // Nach Spielende startet ein Klick aufs Feld ein neues Spiel (kurz danach nicht, gegen Doppelklicks)
     if (gameOver) { if (Date.now() - endedAt > 400) newGame(); return; }
-    if (tapMode) return setMark(i, tapMode);
+    if (flagMode) return toggleFlag(i);   // Flaggen-Modus: Tippen setzt/entfernt Flaggen
     const c = cells[i];
     if (c.flag) return;
     if (firstClick) { firstClick = false; if (!generate(i)) setMessage('mayGuess', {}); startTimer(); }
@@ -615,7 +595,7 @@
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
     const t = elapsed();
-    cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; c.q = false; drawCell(i); } });
+    cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     resetBtn.textContent = '😎';
     let best = false;
@@ -788,16 +768,12 @@
       setTimeout(showSeed, 1500);
     }, () => {});
   });
-  // Flaggen- und Fragezeichen-Modus schließen sich gegenseitig aus
-  function setTapMode(m) {
-    tapMode = tapMode === m ? null : m;
-    for (const [btn, k] of [[flagBtn, 'flag'], [qBtn, 'q']]) {
-      btn.classList.toggle('active', tapMode === k);
-      btn.setAttribute('aria-pressed', tapMode === k);
-    }
+  function toggleFlagMode() {
+    flagMode = !flagMode;
+    flagBtn.classList.toggle('active', flagMode);
+    flagBtn.setAttribute('aria-pressed', flagMode);
   }
-  flagBtn.addEventListener('click', () => setTapMode('flag'));
-  qBtn.addEventListener('click', () => setTapMode('q'));
+  flagBtn.addEventListener('click', toggleFlagMode);
   diffSel.addEventListener('change', () => {
     mode = diffSel.value;
     customBox.classList.toggle('show', mode === 'custom');
@@ -817,8 +793,7 @@
   document.addEventListener('keydown', e => {
     if (e.target.matches('input, select, textarea')) return;
     if (e.key === 'r' || e.key === 'F2') newGame();
-    if (e.key === 'f') setTapMode('flag');
-    if (e.key === 'q') setTapMode('q');
+    if (e.key === 'f') toggleFlagMode();
   });
 
   document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
