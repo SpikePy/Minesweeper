@@ -234,7 +234,7 @@
         diffSel = $('difficulty'), flagBtn = $('flagMode'), qBtn = $('qMode'), customBox = $('customBox');
 
   let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, tapMode = null, mode = 'easy', lang, msgKey = null, msgArg,
-      seed, replay = false;
+      seed, replay = false, endedAt = 0;
 
   // --- Persistenz (optional, fehlertolerant) ---
   const store = {
@@ -592,7 +592,8 @@
   }
 
   function handlePrimary(i) {
-    if (gameOver) return;
+    // Nach Spielende startet ein Klick aufs Feld ein neues Spiel (kurz danach nicht, gegen Doppelklicks)
+    if (gameOver) { if (Date.now() - endedAt > 400) newGame(); return; }
     if (tapMode) return setMark(i, tapMode);
     const c = cells[i];
     if (c.flag) return;
@@ -601,7 +602,7 @@
   }
 
   function lose(hit) {
-    gameOver = true; stopTimer();
+    gameOver = true; endedAt = Date.now(); stopTimer();
     resetBtn.textContent = '😵';
     setMessage('lost', {});
     cells.forEach((c, i) => {
@@ -612,7 +613,7 @@
   }
 
   function win() {
-    gameOver = true; stopTimer();
+    gameOver = true; endedAt = Date.now(); stopTimer();
     const t = elapsed();
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; c.q = false; drawCell(i); } });
     flags = M; updateMines();

@@ -26,7 +26,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 | Flag a cell (again: question mark, again: clear) | Right click | Long press / 🚩 mode | |
 | Question mark | Right click a flag | ? mode | |
 | Open neighbours (chord) | Click a number | Tap a number | |
-| New game | Click the face | Tap the face | `R` or `F2` |
+| New game | Click the face, or the board once the game is over | Tap the face, or the board once the game is over | `R` or `F2` |
 | Toggle 🚩 / ? mode | | Tap 🚩 / ? | `F` / `Q` |
 | Replay a board | Enter a seed and press ▶ | | `Enter` in the seed field |
 
