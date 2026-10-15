@@ -1,6 +1,6 @@
 # 💣 Minesweeper
 
-Classic Minesweeper in a single HTML file — no build step, no dependencies, works on desktop and mobile. The interface is in German.
+Classic Minesweeper in a single HTML file — no build step, no dependencies, works on desktop and mobile. Available in English and German.
 
 **Play it:** https://spikepy.github.io/Minesweeper
 
@@ -13,6 +13,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Touch support: long-press to flag, or toggle flag mode
 - Best times per difficulty, saved in the browser
 - Automatic light and dark theme
+- English and German interface: follows the browser language, switchable with the DE/EN toggle in the top right corner
 
 ## Controls
 

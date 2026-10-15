@@ -41,6 +41,10 @@
   body { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
     padding: 16px; -webkit-tap-highlight-color: transparent; }
   h1 { font-size: 1.5rem; margin: 4px 0 12px; letter-spacing: .5px; }
+  .lang { position: absolute; top: 12px; right: 12px; display: flex; border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; }
+  .lang button { border: 0; border-radius: 0; padding: 4px 9px; font-size: .8rem; color: var(--muted); }
+  .lang button.active { background: var(--accent); color: #fff; }
 
   .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 12px; }
   button, select {
@@ -83,29 +87,32 @@
 </style>
 </head>
 <body>
+  <div class="lang" role="group" aria-label="Language">
+    <button data-lang="de">DE</button><button data-lang="en">EN</button>
+  </div>
   <h1>💣 Minesweeper</h1>
 
   <div class="controls">
-    <select id="difficulty" aria-label="Schwierigkeit">
-      <option value="easy">Anfänger (9×9, 10)</option>
-      <option value="medium">Fortgeschritten (16×16, 40)</option>
-      <option value="hard">Experte (30×16, 99)</option>
-      <option value="custom">Benutzerdefiniert</option>
+    <select id="difficulty" data-i18n-aria="difficulty">
+      <option value="easy" data-i18n="easy"></option>
+      <option value="medium" data-i18n="medium"></option>
+      <option value="hard" data-i18n="hard"></option>
+      <option value="custom" data-i18n="custom"></option>
     </select>
-    <button id="flagMode" title="Flaggen-Modus (für Touch)">🚩 Flaggen-Modus</button>
+    <button id="flagMode" data-i18n="flagMode" data-i18n-title="flagModeTitle"></button>
   </div>
 
   <div class="custom" id="customBox">
-    <label>Breite <input type="number" id="cw" min="5" max="50" value="20"></label>
-    <label>Höhe <input type="number" id="ch" min="5" max="30" value="12"></label>
-    <label>Minen <input type="number" id="cm" min="1" value="35"></label>
-    <button id="applyCustom">Start</button>
+    <label><span data-i18n="width"></span> <input type="number" id="cw" min="5" max="50" value="20"></label>
+    <label><span data-i18n="height"></span> <input type="number" id="ch" min="5" max="30" value="12"></label>
+    <label><span data-i18n="mines"></span> <input type="number" id="cm" min="1" value="35"></label>
+    <button id="applyCustom" data-i18n="start"></button>
   </div>
 
   <div class="game">
     <div class="status">
       <div class="counter" id="mines">💣 0</div>
-      <button class="face" id="reset" title="Neues Spiel">🙂</button>
+      <button class="face" id="reset" data-i18n-title="newGame">🙂</button>
       <div class="counter right" id="timer">⏱ 0</div>
     </div>
     <div class="board-wrap"><div class="board" id="board"></div></div>
@@ -113,11 +120,7 @@
 
   <div class="message" id="message"></div>
   <div class="best" id="best"></div>
-  <div class="help">
-    Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge ·
-    Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf.
-    Der erste Klick ist immer sicher.
-  </div>
+  <div class="help" data-i18n="help"></div>
 
 <script>
 (() => {
@@ -127,18 +130,63 @@
     hard:   { w: 30, h: 16, m: 99 },
   };
 
+  const I18N = {
+    de: {
+      difficulty: 'Schwierigkeit', easy: 'Anfänger (9×9, 10)', medium: 'Fortgeschritten (16×16, 40)',
+      hard: 'Experte (30×16, 99)', custom: 'Benutzerdefiniert',
+      flagMode: '🚩 Flaggen-Modus', flagModeTitle: 'Flaggen-Modus (für Touch)',
+      width: 'Breite', height: 'Höhe', mines: 'Minen', start: 'Start', newGame: 'Neues Spiel',
+      help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge · ' +
+            'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
+            'Der erste Klick ist immer sicher.',
+      lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} Sekunden! 🎉`,
+      newBest: ' Neue Bestzeit!', best: b => `Bestzeit: ${b} s`,
+    },
+    en: {
+      difficulty: 'Difficulty', easy: 'Beginner (9×9, 10)', medium: 'Intermediate (16×16, 40)',
+      hard: 'Expert (30×16, 99)', custom: 'Custom',
+      flagMode: '🚩 Flag mode', flagModeTitle: 'Flag mode (for touch)',
+      width: 'Width', height: 'Height', mines: 'Mines', start: 'Start', newGame: 'New game',
+      help: 'Left click/tap: open · Right click/long press: flag · ' +
+            'Clicking a number with the matching number of flags opens its neighbours. ' +
+            'The first click is always safe.',
+      lost: 'Boom! You lost.', won: t => `You won in ${t} seconds! 🎉`,
+      newBest: ' New best time!', best: b => `Best time: ${b} s`,
+    },
+  };
+
   const $ = id => document.getElementById(id);
   const boardEl = $('board'), minesEl = $('mines'), timerEl = $('timer'),
         resetBtn = $('reset'), msgEl = $('message'), bestEl = $('best'),
         diffSel = $('difficulty'), flagBtn = $('flagMode'), customBox = $('customBox');
 
-  let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, flagMode = false, mode = 'easy';
+  let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, flagMode = false, mode = 'easy', lang, msgKey = null, msgArg;
 
   // --- Persistenz (optional, fehlertolerant) ---
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
+
+  const T = (k, ...a) => { const v = I18N[lang][k]; return typeof v === 'function' ? v(...a) : v; };
+
+  function setLang(l) {
+    lang = l;
+    store.set('ms-lang', l);
+    document.documentElement.lang = l;
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = T(el.dataset.i18nTitle); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', T(el.dataset.i18nAria)); });
+    document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
+    showMessage();
+    showBest();
+  }
+
+  // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
+  function setMessage(key, arg) { msgKey = key; msgArg = arg; showMessage(); }
+  function showMessage() {
+    msgEl.textContent = msgKey ? T(msgKey, msgArg.t) + (msgArg.best ? T('newBest') : '') : '';
+  }
 
   function cellSize() {
     const avail = Math.min(window.innerWidth, 1100) - 60;
@@ -150,7 +198,7 @@
     if (mode !== 'custom') ({ w: W, h: H, m: M } = PRESETS[mode]);
     cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
-    resetBtn.textContent = '🙂'; msgEl.textContent = '';
+    resetBtn.textContent = '🙂'; setMessage(null);
     timerEl.textContent = '⏱ 0';
     render();
     updateMines();
@@ -250,7 +298,7 @@
   function lose(hit) {
     gameOver = true; stopTimer();
     resetBtn.textContent = '😵';
-    msgEl.textContent = 'Boom! Verloren.';
+    setMessage('lost', {});
     cells.forEach((c, i) => {
       if (c.mine && !c.flag) { c.open = true; drawCell(i); }
       else if (!c.mine && c.flag) { cellEls[i].className = 'cell wrong'; cellEls[i].textContent = '❌'; }
@@ -264,18 +312,18 @@
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     resetBtn.textContent = '😎';
-    let msg = `Gewonnen in ${t} Sekunden! 🎉`;
+    let best = false;
     if (mode !== 'custom') {
       const key = 'ms-best-' + mode, prev = +store.get(key);
-      if (!prev || t < prev) { store.set(key, t); msg += ' Neue Bestzeit!'; }
+      if (!prev || t < prev) { store.set(key, t); best = true; }
     }
-    msgEl.textContent = msg;
+    setMessage('won', { t, best });
     showBest();
   }
 
   function showBest() {
     const b = mode !== 'custom' && store.get('ms-best-' + mode);
-    bestEl.textContent = b ? `Bestzeit: ${b} s` : '';
+    bestEl.textContent = b ? T('best', b) : '';
   }
 
   const elapsed = () => Math.floor((Date.now() - startTime) / 1000);
@@ -344,7 +392,11 @@
     if (e.key === 'f') flagBtn.click();
   });
 
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
   // Start
+  const savedLang = store.get('ms-lang');
+  setLang(I18N[savedLang] ? savedLang : (navigator.language || '').startsWith('de') ? 'de' : 'en');
   const saved = store.get('ms-mode');
   if (saved && (PRESETS[saved] || saved === 'custom')) { mode = saved; diffSel.value = saved; }
   customBox.classList.toggle('show', mode === 'custom');
