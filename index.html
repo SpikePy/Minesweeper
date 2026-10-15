@@ -78,6 +78,7 @@
   .cell.open { background: var(--cell-open); cursor: default; }
   .cell.mine-hit { background: var(--mine); }
   .cell.wrong { background: var(--cell-open); color: var(--mine); }
+  .cell.q { color: var(--muted); }
   .n1{color:var(--n1)}.n2{color:var(--n2)}.n3{color:var(--n3)}.n4{color:var(--n4)}
   .n5{color:var(--n5)}.n6{color:var(--n6)}.n7{color:var(--n7)}.n8{color:var(--n8)}
 
@@ -136,7 +137,7 @@
       hard: 'Experte (30×16, 99)', custom: 'Benutzerdefiniert',
       flagMode: '🚩 Flaggen-Modus', flagModeTitle: 'Flaggen-Modus (für Touch)',
       width: 'Breite', height: 'Höhe', mines: 'Minen', start: 'Start', newGame: 'Neues Spiel',
-      help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge · ' +
+      help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge, nochmal: Fragezeichen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher.',
       lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} Sekunden! 🎉`,
@@ -147,7 +148,7 @@
       hard: 'Expert (30×16, 99)', custom: 'Custom',
       flagMode: '🚩 Flag mode', flagModeTitle: 'Flag mode (for touch)',
       width: 'Width', height: 'Height', mines: 'Mines', start: 'Start', newGame: 'New game',
-      help: 'Left click/tap: open · Right click/long press: flag · ' +
+      help: 'Left click/tap: open · Right click/long press: flag, again: question mark · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe.',
       lost: 'Boom! You lost.', won: t => `You won in ${t} seconds! 🎉`,
@@ -196,7 +197,7 @@
   function newGame() {
     stopTimer();
     if (mode !== 'custom') ({ w: W, h: H, m: M } = PRESETS[mode]);
-    cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
+    cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, q: false, n: 0 }));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
     resetBtn.textContent = '🙂'; setMessage(null);
     timerEl.textContent = '⏱ 0';
@@ -269,8 +270,10 @@
   function toggleFlag(i) {
     const c = cells[i];
     if (c.open || gameOver) return;
-    c.flag = !c.flag;
-    flags += c.flag ? 1 : -1;
+    // Zyklus: leer → Flagge → Fragezeichen → leer
+    if (c.flag) { c.flag = false; c.q = true; flags--; }
+    else if (c.q) c.q = false;
+    else { c.flag = true; flags++; }
     drawCell(i); updateMines();
     if (navigator.vibrate) navigator.vibrate(15);
   }
@@ -284,6 +287,7 @@
       if (c.mine) el.textContent = '💣';
       else if (c.n) { el.textContent = c.n; el.classList.add('n' + c.n); }
     } else if (c.flag) el.textContent = '🚩';
+    else if (c.q) { el.textContent = '?'; el.classList.add('q'); }
   }
 
   function handlePrimary(i) {
@@ -309,7 +313,7 @@
   function win() {
     gameOver = true; stopTimer();
     const t = elapsed();
-    cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
+    cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; c.q = false; drawCell(i); } });
     flags = M; updateMines();
     resetBtn.textContent = '😎';
     let best = false;
