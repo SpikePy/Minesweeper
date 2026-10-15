@@ -9,10 +9,10 @@ create table public.scores (
   id         bigint generated always as identity primary key,
   level      text        not null check (level in ('easy', 'medium', 'hard')),
   time       integer     not null check (time between 0 and 99999),
-  seed       text        not null check (seed ~ '^[BIE]-[23456789A-HJKMNP-Z]{6}$'),
+  seed       text                 check (seed ~ '^[BIE]-[23456789A-HJKMNP-Z]{6}$'),  -- null = unknown (added by hand)
   name       text        not null check (char_length(name) between 1 and 16),
   created_at timestamptz not null default now(),
-  -- the seed's level letter must match the level
+  -- the seed's level letter must match the level (skipped when the seed is null)
   check (left(seed, 1) = case level when 'easy' then 'B' when 'medium' then 'I' else 'E' end)
 );
 
