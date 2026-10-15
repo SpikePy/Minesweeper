@@ -1,9 +1,10 @@
 // Service Worker: macht das Spiel installierbar und offline spielbar.
 // Netzwerk zuerst (damit Updates sofort ankommen), bei fehlender Verbindung aus dem Cache.
 // Anfragen an andere Server (Supabase) laufen unverändert durch.
-const CACHE = 'minesweeper-v1';
+const CACHE = 'minesweeper-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'favicon.svg',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+  'faces/ok.png', 'faces/ouch.png', 'faces/dead.png', 'faces/win.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
