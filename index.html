@@ -314,8 +314,8 @@
     resetBtn.textContent = '😎';
     let best = false;
     if (mode !== 'custom') {
-      const key = 'ms-best-' + mode, prev = +store.get(key);
-      if (!prev || t < prev) { store.set(key, t); best = true; }
+      const key = 'ms-best-' + mode, prev = store.get(key);
+      if (prev === null || t < +prev) { store.set(key, t); best = true; }
     }
     setMessage('won', { t, best });
     showBest();
