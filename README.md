@@ -12,7 +12,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Question marks for unsure cells: right click a flag again
 - Chording: click a number with the matching number of flags to open all its neighbours
 - Touch support: long-press to flag, or toggle flag mode
-- Best times per difficulty, saved in the browser and always shown below the board
+- Shared high-score list: the 5 best times per difficulty with player name and seed, stored online in [Supabase](https://supabase.com) so it is the same on every device. Without Supabase configured, or when offline, the list is kept in the browser instead
 - Automatic light and dark theme
 - English and German interface: follows the browser language, switchable with the DE/EN toggle in the top right corner
 
@@ -26,6 +26,16 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 | New game | Click the face | Tap the face | `R` or `F2` |
 | Toggle flag mode | | | `F` |
 | Replay a board | Enter a seed and press ▶ | | `Enter` in the seed field |
+
+## Shared high scores (one-time setup)
+
+The game stays a static page on GitHub Pages; the browser talks to Supabase directly.
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the dashboard open **SQL Editor**, paste [`supabase/setup.sql`](supabase/setup.sql) and run it. It creates the `scores` table and allows visitors only to read scores and add new ones.
+3. Under **Project Settings → API** copy the project URL and the publishable (anon) key into `SUPABASE_URL` and `SUPABASE_KEY` in `index.html`. That key is meant to be public.
+
+Note: like any leaderboard in a static page, scores are submitted by the browser and can be faked by someone determined. Entries can be removed in the Supabase table editor.
 
 ## Run locally
 

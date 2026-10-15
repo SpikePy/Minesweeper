@@ -89,7 +89,18 @@
     padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
   .scores caption { color: var(--text); font-size: 1.2rem; font-weight: 700; padding-bottom: 8px; letter-spacing: .3px; }
   .scores td { padding: 4px 6px; }
-  .scores tr.current td { color: var(--accent); }
+  .scores tr.level td { font-weight: 700; padding-top: 12px; }
+  .scores tbody tr.level:first-child td { padding-top: 4px; }
+  .scores tr.level.current td { color: var(--accent); }
+  .scores td.rank { color: var(--muted); text-align: right; width: 1.6em; }
+  .scores td.name { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scores td.empty { color: var(--muted); padding-left: 2.2em; }
+  .scoresnote { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 6px; }
+  .scoresnote button { font-size: .8rem; padding: 2px 8px; margin-left: 6px; }
+  .nameform { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-top: 6px; }
+  .nameform[hidden] { display: none; }
+  .nameform input { width: 160px; font: inherit; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text); }
   .scores td.time, .scores td.seed { white-space: nowrap; }
   .scores td.time { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 20px; }
   .scores td.seed { text-align: right; padding-left: 12px; }
@@ -100,7 +111,7 @@
   .seedbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
     margin-top: 10px; font-size: .9rem; }
   .seedbar code { font-weight: 700; font-size: 1rem; letter-spacing: .5px; user-select: all; }
-  .seedbar input { width: 150px; font: inherit; padding: 6px 8px; border-radius: 6px; text-transform: uppercase;
+  .seedbar input { width: 130px; font: inherit; padding: 6px 8px; border-radius: 6px; text-transform: uppercase;
     border: 1px solid var(--border); background: var(--panel); color: var(--text); }
   .seedbar button { padding: 6px 10px; }
   .seednote { text-align: center; color: var(--muted); font-size: .8rem; min-height: 1.2em; margin-top: 4px; }
@@ -146,7 +157,13 @@
   </div>
 
   <div class="message" id="message"></div>
+  <form class="nameform" id="nameForm" hidden>
+    <label for="nameInput" data-i18n="topFive"></label>
+    <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
+    <button data-i18n="save"></button>
+  </form>
   <table class="scores" id="scores"><caption data-i18n="scores"></caption><tbody></tbody></table>
+  <div class="scoresnote"><span id="scoresNote"></span><button id="nameBtn" hidden></button></div>
   <div class="help" data-i18n="help"></div>
 
 <script>
@@ -166,8 +183,11 @@
       help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge, nochmal: Fragezeichen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Mit einem Seed lässt sich ein Spielfeld erneut spielen.',
-      lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} Sekunden! 🎉`,
-      newBest: ' Neue Bestzeit!', scores: '🏆 Bestzeiten',
+      lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} ${t === 1 ? 'Sekunde' : 'Sekunden'}! 🎉`,
+      newBest: ' Top 5!', scores: '🏆 Bestzeiten',
+      topFive: 'Top 5! Dein Name:', yourName: 'Name', save: 'Speichern',
+      localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
+      player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
       seed: 'Seed', copySeed: 'Seed kopieren', enterSeed: 'Seed eingeben', playSeed: 'Seed spielen',
       copied: 'Kopiert!', invalidSeed: 'Ungültiger Seed.', replayNote: 'Wiederholung – zählt nicht für Bestzeiten',
     },
@@ -179,8 +199,11 @@
       help: 'Left click/tap: open · Right click/long press: flag, again: question mark · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'Enter a seed to replay a board.',
-      lost: 'Boom! You lost.', won: t => `You won in ${t} seconds! 🎉`,
-      newBest: ' New best time!', scores: '🏆 Best times',
+      lost: 'Boom! You lost.', won: t => `You won in ${t} ${t === 1 ? 'second' : 'seconds'}! 🎉`,
+      newBest: ' Top 5!', scores: '🏆 Best times',
+      topFive: 'Top 5! Your name:', yourName: 'Name', save: 'Save',
+      localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
+      player: n => `👤 ${n}`, changeName: 'Name for future entries:',
       seed: 'Seed', copySeed: 'Copy seed', enterSeed: 'Enter seed', playSeed: 'Play seed',
       copied: 'Copied!', invalidSeed: 'Invalid seed.', replayNote: 'Replay – doesn\'t count for best times',
     },
@@ -398,15 +421,69 @@
     flags = M; updateMines();
     resetBtn.textContent = '😎';
     let best = false;
-    if (mode !== 'custom' && !replay) {
-      const prev = readBest(mode);
-      if (!prev || t < prev.t) { store.set('ms-best-' + mode, JSON.stringify({ t, seed })); best = true; }
+    if (mode !== 'custom' && !replay && (qualifies(scores[mode], t) || qualifies(readLocal(mode), t))) {
+      best = true;
+      pending = { level: mode, t, seed };
+      const name = store.get('ms-name');
+      if (name) submitScore(name);
+      else { nameForm.hidden = false; nameInput.focus(); }
     }
     setMessage('won', { t, best });
+  }
+
+  // --- Bestenliste: Top 5 je Stufe, online in Supabase, lokale Kopie als Fallback ---
+  // Der öffentliche (publishable/anon) Schlüssel darf im Quelltext stehen: die Tabelle
+  // erlaubt per Row Level Security nur Lesen und Hinzufügen (siehe supabase/setup.sql).
+  const SUPABASE_URL = '';   // z. B. 'https://abcdefgh.supabase.co'
+  const SUPABASE_KEY = '';   // 'sb_publishable_…' oder der anon-Key
+  const TOP = 5, LEVELS = Object.keys(PRESETS);
+  let scores = {}, online = false, saveFailed = false, pending = null;
+
+  const byTime = (a, b) => a.t - b.t || (a.date || '').localeCompare(b.date || '');
+  const qualifies = (list, t) => list.length < TOP || t < list[TOP - 1].t;
+
+  function readLocal(m) {
+    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v; } catch {}
+    const old = readBest(m);   // frühere einzelne Bestzeit übernehmen
+    return old ? [{ name: '', t: old.t, seed: old.seed || '' }] : [];
+  }
+
+  async function api(path, opts = {}) {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/' + path,
+      { ...opts, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...opts.headers } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.status === 204 || r.status === 201 ? null : r.json();
+  }
+
+  async function loadScores() {
+    let shared = null;
+    if (SUPABASE_URL) try {
+      shared = await Promise.all(LEVELS.map(m => api(
+        `scores?select=name,time,seed,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`)));
+    } catch {}
+    online = !!shared;
+    LEVELS.forEach((m, i) => {
+      scores[m] = shared ? shared[i].map(r => ({ name: r.name, t: r.time, seed: r.seed, date: r.created_at })) : readLocal(m);
+    });
     showBest();
   }
 
-  // Bestzeiten aller Stufen; die aktuelle Stufe ist hervorgehoben
+  async function submitScore(name) {
+    const p = pending;
+    pending = null; nameForm.hidden = true;
+    if (!p) return;
+    name = name.trim().slice(0, 16);
+    store.set('ms-name', name);
+    const entry = { name, t: p.t, seed: p.seed, date: new Date().toISOString() };
+    store.set('ms-top-' + p.level, JSON.stringify([...readLocal(p.level), entry].sort(byTime).slice(0, TOP)));
+    saveFailed = false;
+    if (online) try {
+      await api('scores', { method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ level: p.level, time: p.t, seed: p.seed, name }) });
+    } catch { saveFailed = true; }
+    await loadScores();
+  }
+
   // Gespeichert als {t, seed}; ältere Einträge sind nur eine Zahl
   function readBest(m) {
     const raw = store.get('ms-best-' + m);
@@ -414,24 +491,45 @@
     try { const v = JSON.parse(raw); return typeof v === 'number' ? { t: v } : v; } catch { return null; }
   }
 
-  const scoresEl = $('scores');
+  const scoresEl = $('scores'), nameForm = $('nameForm'), nameInput = $('nameInput'), nameBtn = $('nameBtn');
   function showBest() {
-    scoresEl.tBodies[0].innerHTML = '';
-    for (const m of Object.keys(PRESETS)) {
-      const row = scoresEl.tBodies[0].insertRow(), b = readBest(m);
-      row.classList.toggle('current', m === mode);
-      row.insertCell().textContent = T(m);
-      const time = row.insertCell(), seedCell = row.insertCell();
-      time.className = 'time'; seedCell.className = 'seed';
-      time.textContent = b ? b.t + ' s' : '–';
-      if (b && b.seed) {
-        const btn = document.createElement('button');
-        btn.textContent = b.seed; btn.title = T('playSeed');
-        btn.addEventListener('click', () => newGame(b.seed));
-        seedCell.appendChild(btn);
-      }
+    const tb = scoresEl.tBodies[0];
+    tb.innerHTML = '';
+    const cell = (row, cls, text) => { const c = row.insertCell(); c.className = cls; c.textContent = text; return c; };
+    for (const m of LEVELS) {
+      const head = tb.insertRow();
+      head.className = 'level' + (m === mode ? ' current' : '');
+      cell(head, '', T(m)).colSpan = 4;
+      const list = scores[m] || [];
+      if (!list.length) cell(tb.insertRow(), 'empty', '–').colSpan = 4;
+      list.forEach((e, i) => {
+        const row = tb.insertRow();
+        cell(row, 'rank', i + 1 + '.');
+        cell(row, 'name', e.name || '–').title = e.name || '';
+        cell(row, 'time', e.t + ' s');
+        const seedCell = cell(row, 'seed', '');
+        if (e.seed) {
+          const btn = document.createElement('button');
+          btn.textContent = e.seed; btn.title = T('playSeed');
+          btn.addEventListener('click', () => newGame(e.seed));
+          seedCell.appendChild(btn);
+        }
+      });
     }
+    $('scoresNote').textContent = saveFailed ? T('saveFailed') : online ? '' : T('localOnly');
+    const name = store.get('ms-name');
+    nameBtn.hidden = !name;
+    if (name) nameBtn.textContent = T('player', name);
   }
+
+  nameForm.addEventListener('submit', e => {
+    e.preventDefault();
+    if (nameInput.value.trim()) submitScore(nameInput.value);
+  });
+  nameBtn.addEventListener('click', () => {
+    const n = prompt(T('changeName'), store.get('ms-name') || '');
+    if (n && n.trim()) { store.set('ms-name', n.trim().slice(0, 16)); showBest(); }
+  });
 
   const elapsed = () => Math.floor((Date.now() - startTime) / 1000);
   function startTimer() {
@@ -513,12 +611,14 @@
   document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
 
   // Start
+  LEVELS.forEach(m => { scores[m] = readLocal(m); });
   const savedLang = store.get('ms-lang');
   setLang(I18N[savedLang] ? savedLang : (navigator.language || '').startsWith('de') ? 'de' : 'en');
   const saved = store.get('ms-mode');
   if (saved && (PRESETS[saved] || saved === 'custom')) { mode = saved; diffSel.value = saved; }
   customBox.classList.toggle('show', mode === 'custom');
   if (mode === 'custom') applyCustom(); else newGame();
+  loadScores();
 })();
 </script>
 </body>
