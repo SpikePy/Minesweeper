@@ -95,18 +95,40 @@
 
   .message { min-height: 1.5em; margin-top: 12px; text-align: center; font-weight: 600; }
   .help { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 14px; max-width: 520px; line-height: 1.5; }
-  .scoresbar { display: flex; gap: 6px; margin-top: 12px; }
+  #scoresBtn { margin-top: 12px; }
+  .replaybar { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 10px; }
+  .replaybar[hidden] { display: none; }
+  .replaybar > button { width: 44px; padding: 6px 0; }
+  .replaybar button:disabled { opacity: .4; cursor: default; }
+  .speeds { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .speeds button { border: 0; border-radius: 0; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+  .player { max-width: 11em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .overlay { position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .55);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .overlay[hidden] { display: none; }
+  .dialog { background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 14px 16px 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .35); display: flex; flex-direction: column; align-items: center; }
+  .dialoghead { display: flex; align-items: center; gap: 6px; width: 100%; }
+  .dialoghead h2 { flex: 1; margin: 0; font-size: 1.2rem; }
+  .dialoghead button { padding: 4px 10px; }
+  .result { font-weight: 700; text-align: center; margin-top: 10px; min-height: 0; }
+  .result:empty { display: none; }
+  button.primary { margin-top: 12px; background: var(--accent); color: #fff; border-color: var(--accent); }
   .scores { margin-top: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
   .scores td { padding: 4px 6px; }
   .scores tr.level td { font-weight: 700; padding-top: 12px; }
   .scores tbody tr.level:first-child td { padding-top: 4px; }
   .scores tr.level.current td { color: var(--accent); }
+  .scores tr.new td { background: color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 700; }
+  .scores tr.new td:first-child { border-radius: 6px 0 0 6px; }
+  .scores tr.new td:last-child { border-radius: 0 6px 6px 0; }
   .scores td.rank { color: var(--muted); text-align: right; width: 1.6em; }
   .scores td.name { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .scores td.empty { color: var(--muted); padding-left: 2.2em; }
   .scoresnote { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 6px; }
-  .scoresnote button { font-size: .8rem; padding: 2px 8px; margin-left: 6px; }
   #refreshScores:disabled { opacity: .5; cursor: progress; }
   .nameform { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-top: 6px; }
   .nameform[hidden] { display: none; }
@@ -125,6 +147,7 @@
   <h1>💣 Minesweeper</h1>
 
   <div class="controls">
+    <button id="nameBtn" class="player"></button>
     <select id="difficulty" data-i18n-aria="difficulty">
       <option value="easy" data-i18n="easy"></option>
       <option value="medium" data-i18n="medium"></option>
@@ -151,21 +174,35 @@
     <div class="board-wrap"><div class="board" id="board"></div></div>
   </div>
 
-  <div class="message" id="message"></div>
-  <form class="nameform" id="nameForm" hidden>
-    <label for="nameInput" data-i18n="topTen"></label>
-    <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
-    <button data-i18n="save"></button>
-  </form>
-  <div class="scoresbar">
-    <button id="scoresBtn" data-i18n="scores" aria-expanded="false" aria-controls="scoresBox"></button>
-    <button id="refreshScores" data-i18n-title="refresh" data-i18n-aria="refresh">↻</button>
+  <div class="replaybar" id="replayBar" hidden>
+    <button id="replayPause"></button>
+    <button id="replayRestart" data-i18n-title="restartReplay" data-i18n-aria="restartReplay">⏮</button>
+    <div class="speeds" role="group" data-i18n-aria="replaySpeed">
+      <button data-speed="1">1×</button><button data-speed="0.5">½×</button><button data-speed="0.25">¼×</button>
+    </div>
   </div>
-  <div id="scoresBox" hidden>
-    <table class="scores" id="scores">
-      <tbody></tbody>
-    </table>
-    <div class="scoresnote"><span id="scoresNote"></span><button id="nameBtn" hidden></button></div>
+
+  <div class="message" id="message"></div>
+  <button id="scoresBtn" data-i18n="scores" aria-haspopup="dialog" aria-controls="scoresOverlay"></button>
+
+  <!-- Bestenliste als Overlay: beim Laden und nach jeder Runde -->
+  <div class="overlay" id="scoresOverlay" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="scoresTitle">
+      <div class="dialoghead">
+        <h2 id="scoresTitle" data-i18n="scores"></h2>
+        <button id="refreshScores" data-i18n-title="refresh" data-i18n-aria="refresh">↻</button>
+        <button id="closeScores" data-i18n-title="close" data-i18n-aria="close">✕</button>
+      </div>
+      <div class="result" id="overlayMsg"></div>
+      <form class="nameform" id="nameForm" hidden>
+        <label for="nameInput" data-i18n="topTen"></label>
+        <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
+        <button data-i18n="save"></button>
+      </form>
+      <table class="scores" id="scores"><tbody></tbody></table>
+      <div class="scoresnote" id="scoresNote"></div>
+      <button id="overlayNewGame" class="primary" data-i18n="newGame"></button>
+    </div>
   </div>
   <div class="help" data-i18n="help"></div>
 
@@ -186,13 +223,14 @@
       help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge setzen/entfernen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
-            'Mit ▶ in der Bestenliste lässt sich eine Bestzeit als Wiedergabe ansehen.',
+            'Mit ▶ in der Bestenliste lässt sich eine Bestzeit als Wiedergabe ansehen (mit Pause, Neustart und Tempo 1×, ½×, ¼×).',
       lost: 'Boom! Verloren.', won: ms => `Gewonnen in ${fmtTime(ms)}! 🎉`,
       newBest: r => ` Platz ${r}!`, checking: ' Bestenliste wird geprüft …', scores: '🏆 Bestzeiten',
       topTen: 'Dein Name für die Bestenliste:', yourName: 'Name', save: 'Speichern',
       localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
       player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
-      refresh: 'Bestzeiten neu laden', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
+      refresh: 'Bestzeiten neu laden', close: 'Schließen', setName: '👤 Name festlegen', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
+      pause: 'Pause', resume: 'Weiter', restartReplay: 'Wiedergabe neu starten', replaySpeed: 'Tempo',
       mayGuess: 'So viele Minen: hier muss eventuell geraten werden.',
       install: 'Als App installieren',
     },
@@ -204,13 +242,14 @@
       help: 'Left click/tap: open · Right click/long press: set/remove flag · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
-            'Press ▶ in the best times to watch a replay of that game.',
+            'Press ▶ in the best times to watch a replay of that game (with pause, restart and speed 1×, ½×, ¼×).',
       lost: 'Boom! You lost.', won: ms => `You won in ${fmtTime(ms)}! 🎉`,
       newBest: r => ` Rank ${r}!`, checking: ' Checking the best times …', scores: '🏆 Best times',
       topTen: 'Your name for the best times:', yourName: 'Name', save: 'Save',
       localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
       player: n => `👤 ${n}`, changeName: 'Name for future entries:',
-      refresh: 'Reload best times', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
+      refresh: 'Reload best times', close: 'Close', setName: '👤 Set name', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
+      pause: 'Pause', resume: 'Resume', restartReplay: 'Restart replay', replaySpeed: 'Speed',
       mayGuess: 'So many mines that this board may need a guess.',
       install: 'Install as app',
     },
@@ -245,12 +284,14 @@
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
     showMessage();
     showBest();
+    updateReplayBar();
   }
 
   // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
   function setMessage(key, arg) { msgKey = key; msgArg = arg; showMessage(); }
   function showMessage() {
     msgEl.textContent = msgKey ? T(msgKey, msgArg.t) + (msgArg.rank ? T('newBest', msgArg.rank) : msgArg.checking ? T('checking') : '') : '';
+    $('overlayMsg').textContent = gameOver ? msgEl.textContent : '';   // Ergebnis der Runde oben im Overlay
   }
 
   function cellSize() {
@@ -260,6 +301,8 @@
 
   function newGame() {
     stopReplay();
+    showScores(false);
+    newEntry = null;
     stopTimer();
     if (mode !== 'custom') ({ w: W, h: H, m: M } = PRESETS[mode]);
     rec = [];
@@ -523,7 +566,7 @@
   // --- Aufnahme und Wiedergabe ---
   // Jede Aktion wird als [ms seit dem ersten Aufdecken, 0 = aufdecken/Akkord | 1 = Flagge, Feld]
   // aufgezeichnet. Ein Gewinn speichert sie mit den Minen als Demo zur Bestzeit.
-  let rec = [], replaying = false, replayTimers = [], replayMs = 0;
+  let rec = [], replaying = false;
 
   function act(a, i) {
     const c = cells[i];
@@ -536,28 +579,87 @@
 
   const makeDemo = () => ({ w: W, h: H, m: M, mines: cells.flatMap((c, i) => c.mine ? [i] : []), ev: rec });
 
+  // Wiedergabe mit eigener Uhr: pos = Demo-Zeit in ms (erstes Ereignis bei LEAD), läuft mit replaySpeed
+  // und steht bei Pause. Es gibt immer nur einen Timer für das nächste fällige Ereignis.
+  const LEAD = 600;
+  let replay = null, replaySpeed = 1;   // replay = { level, e, k (nächstes Ereignis), pos, since, paused, timer }
+  const replayBar = $('replayBar'), replayPauseBtn = $('replayPause');
+  const replayPos = () => replay.paused ? replay.pos : replay.pos + (performance.now() - replay.since) * replaySpeed;
+  const replayDone = () => replay.k >= replay.e.demo.ev.length;
+
   function playDemo(level, e) {
     const d = e.demo, p = PRESETS[level];
     if (!d || d.w !== p.w || d.h !== p.h || d.m !== p.m) return;
     mode = level; diffSel.value = level; customBox.classList.remove('show');
     newGame();
-    replaying = true; replayMs = e.ms;
+    replaying = true;
+    replay = { level, e, k: 0, pos: 0, since: performance.now(), paused: false, timer: null };
     d.mines.forEach(i => { cells[i].mine = true; });
     cells.forEach((c, i) => { c.n = neighbors(i).filter(j => cells[j].mine).length; });
     setMessage('replayOf', { t: e.name || '–' });
-    for (const [t, a, i] of d.ev) replayTimers.push(setTimeout(() => {
-      // Klick sichtbar machen: Feld kurz umranden, Gesicht zuckt beim Aufdecken
-      cellEls[i].animate([{ boxShadow: 'inset 0 0 0 3px var(--accent)' }, { boxShadow: 'inset 0 0 0 3px transparent' }], 450);
-      if (!a) { setFace('ouch'); setTimeout(() => { if (!gameOver) setFace('ok'); }, 150); }
-      act(a ? 'f' : 'o', i);
-    }, 600 + t));
+    scheduleReplay();
+    updateReplayBar();
     boardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  function stopReplay() {
-    replayTimers.forEach(clearTimeout);
-    replayTimers = []; replaying = false;
+  function scheduleReplay() {
+    clearTimeout(replay.timer);
+    if (replay.paused || replayDone()) return;
+    const wait = (LEAD + replay.e.demo.ev[replay.k][0] - replayPos()) / replaySpeed;
+    replay.timer = setTimeout(stepReplay, Math.max(0, wait));
   }
+
+  function stepReplay() {
+    const ev = replay.e.demo.ev;
+    while (!replayDone() && LEAD + ev[replay.k][0] <= replayPos() + 1) {
+      const [, a, i] = ev[replay.k++];
+      // Klick sichtbar machen: Feld kurz umranden, Gesicht zuckt beim Aufdecken
+      cellEls[i].animate([{ boxShadow: 'inset 0 0 0 3px var(--accent)' }, { boxShadow: 'inset 0 0 0 3px transparent' }], 450 / replaySpeed);
+      if (!a) { setFace('ouch'); setTimeout(() => { if (!gameOver) setFace('ok'); }, 150); }
+      act(a ? 'f' : 'o', i);
+    }
+    if (replayDone()) updateReplayBar(); else scheduleReplay();
+  }
+
+  function toggleReplayPause() {
+    if (!replay || replayDone()) return;
+    if (replay.paused) replay.since = performance.now();
+    else replay.pos = replayPos();
+    replay.paused = !replay.paused;
+    scheduleReplay();
+    updateReplayBar();
+  }
+
+  function setReplaySpeed(s) {
+    if (replay && !replay.paused) { replay.pos = replayPos(); replay.since = performance.now(); }
+    replaySpeed = s;
+    if (replay) scheduleReplay();
+    updateReplayBar();
+  }
+
+  function updateReplayBar() {
+    replayBar.hidden = !replay;
+    if (!replay) return;
+    const play = replay.paused || replayDone();
+    replayPauseBtn.textContent = play ? '▶' : '⏸';
+    replayPauseBtn.title = T(play ? 'resume' : 'pause');
+    replayPauseBtn.setAttribute('aria-label', replayPauseBtn.title);
+    replayPauseBtn.disabled = replayDone();
+    replayBar.querySelectorAll('[data-speed]').forEach(b => {
+      const on = +b.dataset.speed === replaySpeed;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+    });
+  }
+
+  function stopReplay() {
+    if (replay) clearTimeout(replay.timer);
+    replay = null; replaying = false;
+    updateReplayBar();
+  }
+
+  replayPauseBtn.addEventListener('click', toggleReplayPause);
+  $('replayRestart').addEventListener('click', () => { if (replay) playDemo(replay.level, replay.e); });
+  replayBar.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => setReplaySpeed(+b.dataset.speed)));
 
   function handlePrimary(i) {
     // Nach Spielende startet ein Klick aufs Feld ein neues Spiel (kurz danach nicht, gegen Doppelklicks)
@@ -577,13 +679,21 @@
     cellEls[hit].classList.add('mine-hit');
   }
 
+  // Nach einem Gewinn (nicht bei Wiedergaben) die Bestenliste zeigen, kurz verzögert,
+  // damit man das Spielfeld noch sieht; nicht, wenn inzwischen ein neues Spiel läuft
+  function afterRound(delay = 900) {
+    if (replaying) return;
+    const game = cells;
+    setTimeout(() => { if (cells === game) showScores(true); }, delay);
+  }
+
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
-    const t = replaying ? replayMs : elapsedMs();
+    const t = replaying ? replay.e.ms : elapsedMs();
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     setFace('win');
-    if (mode === 'custom' || replaying) return setMessage('won', { t });
+    if (mode === 'custom' || replaying) { setMessage('won', { t }); return afterRound(); }
     checkRank(mode, t, makeDemo());
   }
 
@@ -596,11 +706,12 @@
     const rank = list.filter(e => e.ms <= t).length + 1;
     const placed = rank <= TOP;
     if (cells === game) setMessage('won', { t, rank: placed && rank });   // nur, wenn noch kein neues Spiel läuft
+    afterRound(600);
     if (!placed) return;
     pending = { level, ms: t, demo };
     const name = store.get('ms-name');
     if (name) submitScore(name);
-    else { nameForm.hidden = false; nameInput.focus(); }
+    else { nameForm.hidden = false; setTimeout(() => nameInput.focus(), 650); }
   }
 
   // --- Bestenliste: Top 10 je Stufe, online in Supabase, lokale Kopie als Fallback ---
@@ -610,6 +721,7 @@
   const SUPABASE_KEY = 'sb_publishable_AZz_1J7GqPa-mvhzZqoHkg_EtTH00VP';
   const TOP = 10, LEVELS = Object.keys(PRESETS);
   let scores = {}, online = false, saveFailed = false, pending = null;
+  let newEntry = null;   // { level, name, ms } des gerade gespeicherten Eintrags, wird hervorgehoben
   // false, solange die Tabelle noch nicht auf ms + demo umgestellt ist (supabase/migrate.sql):
   // dann nur ganze Sekunden und keine Wiedergaben online
   let fullSchema = true;
@@ -656,6 +768,7 @@
     if (!p) return;
     name = name.trim().slice(0, 16);
     store.set('ms-name', name);
+    newEntry = { level: p.level, name, ms: p.ms };
     const entry = { name, ms: p.ms, date: new Date().toISOString(), demo: p.demo };
     store.set('ms-top-' + p.level, JSON.stringify([...readLocal(p.level), entry].sort(byTime).slice(0, TOP)));
     saveFailed = false;
@@ -664,7 +777,6 @@
         body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), ...(fullSchema && { ms: p.ms, demo: p.demo }), name }) });
     } catch { saveFailed = true; }
     await loadScores();
-    showScores(true);   // nach einem neuen Eintrag die Liste zeigen
   }
 
   // Frühere einzelne Bestzeit: {t, …} in Sekunden; noch ältere Einträge sind nur eine Zahl
@@ -685,8 +797,14 @@
       cell(head, '', T(m)).colSpan = 4;
       const list = scores[m] || [];
       if (!list.length) cell(tb.insertRow(), 'empty', '–').colSpan = 4;
+      let marked = false;
       list.forEach((e, i) => {
         const row = tb.insertRow();
+        if (!marked && newEntry && newEntry.level === m && newEntry.name === e.name && newEntry.ms === e.ms) {
+          marked = true;
+          row.classList.add('new');
+          requestAnimationFrame(() => row.scrollIntoView({ block: 'nearest' }));
+        }
         cell(row, 'rank', i + 1 + '.');
         cell(row, 'name', e.name || '–').title = e.name || '';
         cell(row, 'time', fmtTime(e.ms));
@@ -701,22 +819,20 @@
     }
     $('scoresNote').textContent = saveFailed ? T('saveFailed') : online ? '' : T('localOnly');
     const name = store.get('ms-name');
-    nameBtn.hidden = !name;
-    if (name) nameBtn.textContent = T('player', name);
+    nameBtn.textContent = name ? T('player', name) : T('setName');
+    nameBtn.title = T('changeName');
   }
 
-  // Bestenliste per Button ein- und ausblenden
-  const scoresBox = $('scoresBox'), scoresBtn = $('scoresBtn');
-  function showScores(open) {
-    scoresBox.hidden = !open;
-    scoresBtn.setAttribute('aria-expanded', open);
-    scoresBtn.classList.toggle('active', open);
-  }
-  scoresBtn.addEventListener('click', () => showScores(scoresBox.hidden));
+  // Bestenliste als Overlay: Button, ✕, Klick daneben und Escape
+  const overlay = $('scoresOverlay'), scoresBtn = $('scoresBtn');
+  function showScores(open) { overlay.hidden = !open; }
+  scoresBtn.addEventListener('click', () => showScores(true));
+  $('closeScores').addEventListener('click', () => showScores(false));
+  overlay.addEventListener('click', e => { if (e.target === overlay) showScores(false); });
+  $('overlayNewGame').addEventListener('click', () => newGame());
   const refreshBtn = $('refreshScores');
   refreshBtn.addEventListener('click', async () => {
     refreshBtn.disabled = true;
-    showScores(true);
     try { await loadScores(); } finally { refreshBtn.disabled = false; }
   });
 
@@ -729,7 +845,8 @@
     if (n && n.trim()) { store.set('ms-name', n.trim().slice(0, 16)); showBest(); }
   });
 
-  const elapsedMs = () => Math.round(performance.now() - startTime);
+  // Bei Wiedergaben läuft die Anzeige mit der Wiedergabe-Uhr (Pause, Tempo)
+  const elapsedMs = () => replay ? Math.max(0, Math.round(replayPos() - LEAD)) : Math.round(performance.now() - startTime);
   const elapsed = () => Math.floor(elapsedMs() / 1000);
   function startTimer() {
     startTime = performance.now();
@@ -802,6 +919,7 @@
   $('applyCustom').addEventListener('click', applyCustom);
   window.addEventListener('resize', () => boardEl.style.setProperty('--size', cellSize() + 'px'));
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !overlay.hidden) return showScores(false);
     if (e.target.matches('input, select, textarea')) return;
     if (e.key === 'r' || e.key === 'F2') newGame();
     if (e.key === 'f') toggleFlagMode();
@@ -818,6 +936,7 @@
   customBox.classList.toggle('show', mode === 'custom');
   if (mode === 'custom') applyCustom(); else newGame();
   loadScores();
+  showScores(true);   // beim Laden die Bestenliste zeigen
 
   // --- Installierbar als App (PWA) ---
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});

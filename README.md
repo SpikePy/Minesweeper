@@ -9,10 +9,10 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Three presets: Beginner (9×9, 10 mines), Intermediate (16×16, 40), Expert (30×16, 99)
 - Custom boards up to 50×30
 - No guessing: the first click is always safe and opens an area, and from there every cell can be worked out from the numbers (and the mine counter). The board is generated around your first click. Only extremely dense custom boards may still need a guess; the game says so
-- Replays: every game is recorded (each click with its time). A best time stores that recording, and ▶ next to it in the list plays the game back in real time. Click the face to stop a replay
+- Replays: every game is recorded (each click with its time). A best time stores that recording, and ▶ next to it in the list plays the game back. Below the board you can pause and resume it (⏸/▶), restart it (⏮) and switch the speed between 1×, ½× and ¼×. Click the face to stop a replay
 - Chording: click a number with the matching number of flags to open all its neighbours
 - Touch support: long-press to flag, or switch on the 🚩 button so that taps set and remove flags
-- Shared high-score list behind the 🏆 Best times button: the 10 best times per difficulty, to the millisecond, with player name and a replay of the game, stored online in [Supabase](https://supabase.com) so it is the same on every device. Without Supabase configured, or when offline, the list is kept in the browser instead
+- Shared high-score list as an overlay that opens when the page loads, after every win and with the 🏆 Best times button: the 10 best times per difficulty, to the millisecond, with player name and a replay of the game, stored online in [Supabase](https://supabase.com) so it is the same on every device. Without Supabase configured, or when offline, the list is kept in the browser instead
 - Automatic light and dark theme
 - Installable as an app (PWA): on Android use the 📲 button or *Install app* in the Chrome menu, on iOS *Share → Add to Home Screen*, on desktop the install icon in the address bar. It then runs standalone without browser bars and also works offline (high scores need a connection)
 - English and German interface: follows the browser language, switchable with the DE/EN toggle in the top right corner
