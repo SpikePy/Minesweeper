@@ -63,6 +63,7 @@
   button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .tool { width: 40px; padding: 8px 0; font-weight: 800; }
   .tool[hidden] { display: none; }
+  #flagMode { width: 96px; padding: 4px 0; font-size: 1.6rem; line-height: 1.2; }
 
   .custom { display: none; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
   .custom.show { display: flex; }
@@ -194,7 +195,7 @@
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
             'Mit Seed und gleichem ersten Feld lässt sich ein Spielfeld erneut spielen.',
-      lost: 'Boom! Verloren.', won: t => `Gewonnen in ${t} ${t === 1 ? 'Sekunde' : 'Sekunden'}! 🎉`,
+      lost: 'Boom! Verloren.', won: ms => `Gewonnen in ${fmtTime(ms)}! 🎉`,
       newBest: ' Top 5!', scores: '🏆 Bestzeiten',
       topFive: 'Top 5! Dein Name:', yourName: 'Name', save: 'Speichern',
       localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
@@ -213,7 +214,7 @@
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
             'Enter a seed and click the same first cell to replay a board.',
-      lost: 'Boom! You lost.', won: t => `You won in ${t} ${t === 1 ? 'second' : 'seconds'}! 🎉`,
+      lost: 'Boom! You lost.', won: ms => `You won in ${fmtTime(ms)}! 🎉`,
       newBest: ' Top 5!', scores: '🏆 Best times',
       topFive: 'Top 5! Your name:', yourName: 'Name', save: 'Save',
       localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
@@ -239,6 +240,8 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
 
+  // Zeit in Millisekunden als "12,345 s" bzw. "12.345 s"
+  const fmtTime = ms => (ms / 1000).toFixed(3).replace('.', lang === 'de' ? ',' : '.') + ' s';
   const T = (k, ...a) => { const v = I18N[lang][k]; return typeof v === 'function' ? v(...a) : v; };
 
   function setLang(l) {
@@ -262,8 +265,8 @@
   }
 
   function cellSize() {
-    const avail = Math.min(window.innerWidth, 1100) - 60;
-    return Math.max(24, Math.min(36, Math.floor(avail / W)));
+    const avail = Math.min(window.innerWidth, 1400) - 60;
+    return Math.max(29, Math.min(44, Math.floor(avail / W)));
   }
 
   // --- Seeds: Stufe + 6 Zeichen, z. B. B-K3F9QX oder C20x12x35-K3F9QX ---
@@ -599,14 +602,14 @@
 
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
-    const t = elapsed();
+    const t = elapsedMs();
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     setFace('win');
     let best = false;
     if (mode !== 'custom' && !replay && (qualifies(scores[mode], t) || qualifies(readLocal(mode), t))) {
       best = true;
-      pending = { level: mode, t, seed };
+      pending = { level: mode, ms: t, seed };
       const name = store.get('ms-name');
       if (name) submitScore(name);
       else { nameForm.hidden = false; nameInput.focus(); }
@@ -621,14 +624,17 @@
   const SUPABASE_KEY = 'sb_publishable_AZz_1J7GqPa-mvhzZqoHkg_EtTH00VP';
   const TOP = 5, LEVELS = Object.keys(PRESETS);
   let scores = {}, online = false, saveFailed = false, pending = null;
+  let hasMs = true;   // false, solange die Tabelle noch keine Spalte ms hat (supabase/add-ms.sql)
 
-  const byTime = (a, b) => a.t - b.t || (a.date || '').localeCompare(b.date || '');
-  const qualifies = (list, t) => list.length < TOP || t < list[TOP - 1].t;
+  // Zeiten werden in Millisekunden verglichen und gespeichert (ältere Einträge: t in Sekunden)
+  const byTime = (a, b) => a.ms - b.ms || (a.date || '').localeCompare(b.date || '');
+  const qualifies = (list, ms) => list.length < TOP || ms < list[TOP - 1].ms;
+  const withMs = e => e.ms === undefined ? { ...e, ms: e.t * 1000 } : e;
 
   function readLocal(m) {
-    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v; } catch {}
+    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v.map(withMs); } catch {}
     const old = readBest(m);   // frühere einzelne Bestzeit übernehmen
-    return old ? [{ name: '', t: old.t, seed: old.seed || '' }] : [];
+    return old ? [{ name: '', ms: old.t * 1000, seed: old.seed || '' }] : [];
   }
 
   async function api(path, opts = {}) {
@@ -641,12 +647,18 @@
   async function loadScores() {
     let shared = null;
     if (SUPABASE_URL) try {
-      shared = await Promise.all(LEVELS.map(m => api(
-        `scores?select=name,time,seed,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`)));
+      const query = m => hasMs
+        ? `scores?select=name,time,ms,seed,created_at&level=eq.${m}&order=ms.asc.nullslast,time.asc,created_at.asc&limit=${TOP}`
+        : `scores?select=name,time,seed,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`;
+      try { shared = await Promise.all(LEVELS.map(m => api(query(m)))); }
+      catch (e) {
+        if (!hasMs || !/HTTP 4/.test(e.message)) throw e;   // nur bei unbekannter Spalte auf Sekunden zurückfallen
+        hasMs = false; shared = await Promise.all(LEVELS.map(m => api(query(m))));
+      }
     } catch {}
     online = !!shared;
     LEVELS.forEach((m, i) => {
-      scores[m] = shared ? shared[i].map(r => ({ name: r.name, t: r.time, seed: r.seed, date: r.created_at })) : readLocal(m);
+      scores[m] = shared ? shared[i].map(r => ({ name: r.name, ms: r.ms ?? r.time * 1000, seed: r.seed, date: r.created_at })) : readLocal(m);
     });
     showBest();
   }
@@ -657,12 +669,12 @@
     if (!p) return;
     name = name.trim().slice(0, 16);
     store.set('ms-name', name);
-    const entry = { name, t: p.t, seed: p.seed, date: new Date().toISOString() };
+    const entry = { name, ms: p.ms, seed: p.seed, date: new Date().toISOString() };
     store.set('ms-top-' + p.level, JSON.stringify([...readLocal(p.level), entry].sort(byTime).slice(0, TOP)));
     saveFailed = false;
     if (online) try {
       await api('scores', { method: 'POST', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ level: p.level, time: p.t, seed: p.seed, name }) });
+        body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), ...(hasMs && { ms: p.ms }), seed: p.seed, name }) });
     } catch { saveFailed = true; }
     await loadScores();
   }
@@ -689,7 +701,7 @@
         const row = tb.insertRow();
         cell(row, 'rank', i + 1 + '.');
         cell(row, 'name', e.name || '–').title = e.name || '';
-        cell(row, 'time', e.t + ' s');
+        cell(row, 'time', fmtTime(e.ms));
         const seedCell = cell(row, 'seed', '');
         if (e.seed) {
           const btn = document.createElement('button');
@@ -714,9 +726,10 @@
     if (n && n.trim()) { store.set('ms-name', n.trim().slice(0, 16)); showBest(); }
   });
 
-  const elapsed = () => Math.floor((Date.now() - startTime) / 1000);
+  const elapsedMs = () => Math.round(performance.now() - startTime);
+  const elapsed = () => Math.floor(elapsedMs() / 1000);
   function startTimer() {
-    startTime = Date.now();
+    startTime = performance.now();
     timer = setInterval(() => { timerEl.textContent = '⏱ ' + Math.min(999, elapsed()); }, 250);
   }
   function stopTimer() { clearInterval(timer); timer = null; }

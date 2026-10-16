@@ -12,7 +12,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Seeds: every game shows a short seed such as `B-K3F9QX` (level + 6 characters). Together with the cell you click first it fully describes the board: enter the seed and click the same first cell to replay exactly that board, including custom boards (`C20x12x35-K3F9QX`). Seeds from before the no-guess change give different boards now. Replays don't count for best times, and each best time stores the seed it was set with
 - Chording: click a number with the matching number of flags to open all its neighbours
 - Touch support: long-press to flag, or switch on the 🚩 button so that taps set and remove flags
-- Shared high-score list: the 5 best times per difficulty with player name and seed, stored online in [Supabase](https://supabase.com) so it is the same on every device. Without Supabase configured, or when offline, the list is kept in the browser instead
+- Shared high-score list: the 5 best times per difficulty, to the millisecond, with player name and seed, stored online in [Supabase](https://supabase.com) so it is the same on every device. Without Supabase configured, or when offline, the list is kept in the browser instead
 - Automatic light and dark theme
 - Installable as an app (PWA): on Android use the 📲 button or *Install app* in the Chrome menu, on iOS *Share → Add to Home Screen*, on desktop the install icon in the address bar. It then runs standalone without browser bars and also works offline (high scores need a connection)
 - English and German interface: follows the browser language, switchable with the DE/EN toggle in the top right corner
@@ -33,7 +33,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 The game stays a static page on GitHub Pages; the browser talks to Supabase directly.
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. In the dashboard open **SQL Editor**, paste [`supabase/setup.sql`](supabase/setup.sql) and run it. It creates the `scores` table and allows visitors only to read scores and add new ones.
+2. In the dashboard open **SQL Editor**, paste [`supabase/setup.sql`](supabase/setup.sql) and run it. It creates the `scores` table and allows visitors only to read scores and add new ones. If your table was created before millisecond times existed, run [`supabase/add-ms.sql`](supabase/add-ms.sql) once as well; until then times are saved online in whole seconds.
 3. Under **Project Settings → API** copy the project URL and the publishable (anon) key into `SUPABASE_URL` and `SUPABASE_KEY` in `index.html`. That key is meant to be public.
 
 Note: like any leaderboard in a static page, scores are submitted by the browser and can be faked by someone determined. Entries can be removed in the Supabase table editor.
