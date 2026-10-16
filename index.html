@@ -95,7 +95,7 @@
 
   .message { min-height: 1.5em; margin-top: 12px; text-align: center; font-weight: 600; }
   .help { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 14px; max-width: 520px; line-height: 1.5; }
-  #scoresBtn { margin-top: 12px; }
+  .scoresbar { display: flex; gap: 6px; margin-top: 12px; }
   .scores { margin-top: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
   .scores td { padding: 4px 6px; }
@@ -107,6 +107,7 @@
   .scores td.empty { color: var(--muted); padding-left: 2.2em; }
   .scoresnote { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 6px; }
   .scoresnote button { font-size: .8rem; padding: 2px 8px; margin-left: 6px; }
+  #refreshScores:disabled { opacity: .5; cursor: progress; }
   .nameform { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; margin-top: 6px; }
   .nameform[hidden] { display: none; }
   .nameform input { width: 160px; font: inherit; padding: 6px 8px; border-radius: 6px;
@@ -156,9 +157,14 @@
     <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
     <button data-i18n="save"></button>
   </form>
-  <button id="scoresBtn" data-i18n="scores" aria-expanded="false" aria-controls="scoresBox"></button>
+  <div class="scoresbar">
+    <button id="scoresBtn" data-i18n="scores" aria-expanded="false" aria-controls="scoresBox"></button>
+    <button id="refreshScores" data-i18n-title="refresh" data-i18n-aria="refresh">↻</button>
+  </div>
   <div id="scoresBox" hidden>
-    <table class="scores" id="scores"><tbody></tbody></table>
+    <table class="scores" id="scores">
+      <tbody></tbody>
+    </table>
     <div class="scoresnote"><span id="scoresNote"></span><button id="nameBtn" hidden></button></div>
   </div>
   <div class="help" data-i18n="help"></div>
@@ -186,7 +192,7 @@
       topTen: 'Top 10! Dein Name:', yourName: 'Name', save: 'Speichern',
       localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
       player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
-      watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
+      refresh: 'Bestzeiten neu laden', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
       mayGuess: 'So viele Minen: hier muss eventuell geraten werden.',
       install: 'Als App installieren',
     },
@@ -204,7 +210,7 @@
       topTen: 'Top 10! Your name:', yourName: 'Name', save: 'Save',
       localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
       player: n => `👤 ${n}`, changeName: 'Name for future entries:',
-      watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
+      refresh: 'Reload best times', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
       mayGuess: 'So many mines that this board may need a guess.',
       install: 'Install as app',
     },
@@ -699,6 +705,12 @@
     scoresBtn.classList.toggle('active', open);
   }
   scoresBtn.addEventListener('click', () => showScores(scoresBox.hidden));
+  const refreshBtn = $('refreshScores');
+  refreshBtn.addEventListener('click', async () => {
+    refreshBtn.disabled = true;
+    showScores(true);
+    try { await loadScores(); } finally { refreshBtn.disabled = false; }
+  });
 
   nameForm.addEventListener('submit', e => {
     e.preventDefault();
