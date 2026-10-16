@@ -188,8 +188,8 @@
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
             'Mit ▶ in der Bestenliste lässt sich eine Bestzeit als Wiedergabe ansehen.',
       lost: 'Boom! Verloren.', won: ms => `Gewonnen in ${fmtTime(ms)}! 🎉`,
-      newBest: ' Top 10!', scores: '🏆 Bestzeiten',
-      topTen: 'Top 10! Dein Name:', yourName: 'Name', save: 'Speichern',
+      newBest: r => ` Platz ${r}!`, checking: ' Bestenliste wird geprüft …', scores: '🏆 Bestzeiten',
+      topTen: 'Dein Name für die Bestenliste:', yourName: 'Name', save: 'Speichern',
       localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
       player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
       refresh: 'Bestzeiten neu laden', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
@@ -206,8 +206,8 @@
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
             'Press ▶ in the best times to watch a replay of that game.',
       lost: 'Boom! You lost.', won: ms => `You won in ${fmtTime(ms)}! 🎉`,
-      newBest: ' Top 10!', scores: '🏆 Best times',
-      topTen: 'Top 10! Your name:', yourName: 'Name', save: 'Save',
+      newBest: r => ` Rank ${r}!`, checking: ' Checking the best times …', scores: '🏆 Best times',
+      topTen: 'Your name for the best times:', yourName: 'Name', save: 'Save',
       localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
       player: n => `👤 ${n}`, changeName: 'Name for future entries:',
       refresh: 'Reload best times', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
@@ -250,7 +250,7 @@
   // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
   function setMessage(key, arg) { msgKey = key; msgArg = arg; showMessage(); }
   function showMessage() {
-    msgEl.textContent = msgKey ? T(msgKey, msgArg.t) + (msgArg.best ? T('newBest') : '') : '';
+    msgEl.textContent = msgKey ? T(msgKey, msgArg.t) + (msgArg.rank ? T('newBest', msgArg.rank) : msgArg.checking ? T('checking') : '') : '';
   }
 
   function cellSize() {
@@ -583,15 +583,24 @@
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     setFace('win');
-    let best = false;
-    if (mode !== 'custom' && !replaying && (qualifies(scores[mode], t) || qualifies(readLocal(mode), t))) {
-      best = true;
-      pending = { level: mode, ms: t, demo: makeDemo() };
-      const name = store.get('ms-name');
-      if (name) submitScore(name);
-      else { nameForm.hidden = false; nameInput.focus(); }
-    }
-    setMessage('won', { t, best });
+    if (mode === 'custom' || replaying) return setMessage('won', { t });
+    checkRank(mode, t, makeDemo());
+  }
+
+  // Erst die aktuelle Bestenliste laden, dann den Platz in der Kategorie bestimmen und anzeigen
+  async function checkRank(level, t, demo) {
+    const game = cells;
+    setMessage('won', { t, checking: true });
+    await loadScores();
+    const list = scores[level];   // online, oder die lokale Liste, wenn offline
+    const rank = list.filter(e => e.ms <= t).length + 1;
+    const placed = rank <= TOP;
+    if (cells === game) setMessage('won', { t, rank: placed && rank });   // nur, wenn noch kein neues Spiel läuft
+    if (!placed) return;
+    pending = { level, ms: t, demo };
+    const name = store.get('ms-name');
+    if (name) submitScore(name);
+    else { nameForm.hidden = false; nameInput.focus(); }
   }
 
   // --- Bestenliste: Top 10 je Stufe, online in Supabase, lokale Kopie als Fallback ---
@@ -607,7 +616,6 @@
 
   // Zeiten werden in Millisekunden verglichen und gespeichert (ältere lokale Einträge: t in Sekunden)
   const byTime = (a, b) => a.ms - b.ms || (a.date || '').localeCompare(b.date || '');
-  const qualifies = (list, ms) => list.length < TOP || ms < list[TOP - 1].ms;
   const normEntry = ({ name, ms, t, date, demo }) => ({ name, ms: ms ?? t * 1000, date, demo });
 
   function readLocal(m) {
