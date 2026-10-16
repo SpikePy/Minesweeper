@@ -1,7 +1,7 @@
 {
   "name": "Minesweeper",
   "short_name": "Minesweeper",
-  "description": "Classic Minesweeper with seeds and shared high scores",
+  "description": "Classic Minesweeper without guessing, with shared high scores and replays",
   "id": "./",
   "start_url": "./",
   "scope": "./",

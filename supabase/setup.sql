@@ -10,11 +10,9 @@ create table public.scores (
   level      text        not null check (level in ('easy', 'medium', 'hard')),
   time       integer     not null check (time between 0 and 99999),           -- whole seconds
   ms         integer              check (ms between 0 and 99999999),         -- exact time in milliseconds
-  seed       text                 check (seed ~ '^[BIE]-[23456789A-HJKMNP-Z]{6}$'),  -- null = unknown (added by hand)
+  demo       jsonb                check (pg_column_size(demo) <= 65536),     -- recorded game for the replay; null = none
   name       text        not null check (char_length(name) between 1 and 16),
-  created_at timestamptz not null default now(),
-  -- the seed's level letter must match the level (skipped when the seed is null)
-  check (left(seed, 1) = case level when 'easy' then 'B' when 'medium' then 'I' else 'E' end)
+  created_at timestamptz not null default now()
 );
 
 create index scores_level_time on public.scores (level, time, created_at);

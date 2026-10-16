@@ -95,9 +95,9 @@
 
   .message { min-height: 1.5em; margin-top: 12px; text-align: center; font-weight: 600; }
   .help { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 14px; max-width: 520px; line-height: 1.5; }
-  .scores { margin-top: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  #scoresBtn { margin-top: 12px; }
+  .scores { margin-top: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
     padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
-  .scores caption { color: var(--text); font-size: 1.2rem; font-weight: 700; padding-bottom: 8px; letter-spacing: .3px; }
   .scores td { padding: 4px 6px; }
   .scores tr.level td { font-weight: 700; padding-top: 12px; }
   .scores tbody tr.level:first-child td { padding-top: 4px; }
@@ -111,20 +111,10 @@
   .nameform[hidden] { display: none; }
   .nameform input { width: 160px; font: inherit; padding: 6px 8px; border-radius: 6px;
     border: 1px solid var(--border); background: var(--panel); color: var(--text); }
-  .scores td.time, .scores td.seed { white-space: nowrap; }
-  .scores td.time { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 20px; }
-  .scores td.seed { text-align: right; padding-left: 12px; }
-  .scores td.seed button { background: none; border: 0; padding: 0; color: var(--muted); font-size: .8rem;
-    font-family: ui-monospace, monospace; text-decoration: underline dotted; }
-  .scores td.seed button:hover { color: var(--accent); }
-
-  .seedbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
-    margin-top: 10px; font-size: .9rem; }
-  .seedbar code { font-weight: 700; font-size: 1rem; letter-spacing: .5px; user-select: all; }
-  .seedbar input { width: 110px; font: inherit; padding: 6px 8px; border-radius: 6px; text-transform: uppercase;
-    border: 1px solid var(--border); background: var(--panel); color: var(--text); }
-  .seedbar button { padding: 6px 10px; }
-  .seednote { text-align: center; color: var(--muted); font-size: .8rem; min-height: 1.2em; margin-top: 4px; }
+  .scores td.time { white-space: nowrap; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 20px; }
+  .scores td.play { text-align: right; padding-left: 10px; }
+  .scores td.play button { background: none; border: 0; padding: 0 4px; color: var(--muted); font-size: .9rem; }
+  .scores td.play button:hover { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -158,23 +148,19 @@
       <div class="counter right" id="timer">⏱ 0</div>
     </div>
     <div class="board-wrap"><div class="board" id="board"></div></div>
-    <div class="seedbar">
-      <span><span data-i18n="seed"></span>: <code id="seedText"></code></span>
-      <button id="copySeed" data-i18n-title="copySeed">📋</button>
-      <input id="seedInput" data-i18n-placeholder="enterSeed" data-i18n-aria="enterSeed" autocomplete="off" spellcheck="false">
-      <button id="playSeed" data-i18n-title="playSeed">▶</button>
-    </div>
-    <div class="seednote" id="seedNote"></div>
   </div>
 
   <div class="message" id="message"></div>
   <form class="nameform" id="nameForm" hidden>
-    <label for="nameInput" data-i18n="topFive"></label>
+    <label for="nameInput" data-i18n="topTen"></label>
     <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
     <button data-i18n="save"></button>
   </form>
-  <table class="scores" id="scores"><caption data-i18n="scores"></caption><tbody></tbody></table>
-  <div class="scoresnote"><span id="scoresNote"></span><button id="nameBtn" hidden></button></div>
+  <button id="scoresBtn" data-i18n="scores" aria-expanded="false" aria-controls="scoresBox"></button>
+  <div id="scoresBox" hidden>
+    <table class="scores" id="scores"><tbody></tbody></table>
+    <div class="scoresnote"><span id="scoresNote"></span><button id="nameBtn" hidden></button></div>
+  </div>
   <div class="help" data-i18n="help"></div>
 
 <script>
@@ -194,14 +180,13 @@
       help: 'Linksklick/Tippen: aufdecken · Rechtsklick/Lange drücken: Flagge setzen/entfernen · ' +
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
-            'Mit Seed und gleichem ersten Feld lässt sich ein Spielfeld erneut spielen.',
+            'Mit ▶ in der Bestenliste lässt sich eine Bestzeit als Wiedergabe ansehen.',
       lost: 'Boom! Verloren.', won: ms => `Gewonnen in ${fmtTime(ms)}! 🎉`,
-      newBest: ' Top 5!', scores: '🏆 Bestzeiten',
-      topFive: 'Top 5! Dein Name:', yourName: 'Name', save: 'Speichern',
+      newBest: ' Top 10!', scores: '🏆 Bestzeiten',
+      topTen: 'Top 10! Dein Name:', yourName: 'Name', save: 'Speichern',
       localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
       player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
-      seed: 'Seed', copySeed: 'Seed kopieren', enterSeed: 'Seed eingeben', playSeed: 'Seed spielen',
-      copied: 'Kopiert!', invalidSeed: 'Ungültiger Seed.', replayNote: 'Wiederholung – zählt nicht für Bestzeiten',
+      watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
       mayGuess: 'So viele Minen: hier muss eventuell geraten werden.',
       install: 'Als App installieren',
     },
@@ -213,14 +198,13 @@
       help: 'Left click/tap: open · Right click/long press: set/remove flag · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
-            'Enter a seed and click the same first cell to replay a board.',
+            'Press ▶ in the best times to watch a replay of that game.',
       lost: 'Boom! You lost.', won: ms => `You won in ${fmtTime(ms)}! 🎉`,
-      newBest: ' Top 5!', scores: '🏆 Best times',
-      topFive: 'Top 5! Your name:', yourName: 'Name', save: 'Save',
+      newBest: ' Top 10!', scores: '🏆 Best times',
+      topTen: 'Top 10! Your name:', yourName: 'Name', save: 'Save',
       localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
       player: n => `👤 ${n}`, changeName: 'Name for future entries:',
-      seed: 'Seed', copySeed: 'Copy seed', enterSeed: 'Enter seed', playSeed: 'Play seed',
-      copied: 'Copied!', invalidSeed: 'Invalid seed.', replayNote: 'Replay – doesn\'t count for best times',
+      watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
       mayGuess: 'So many mines that this board may need a guess.',
       install: 'Install as app',
     },
@@ -232,7 +216,7 @@
         diffSel = $('difficulty'), flagBtn = $('flagMode'), customBox = $('customBox');
 
   let W, H, M, cells, cellEls, firstClick, gameOver, opened, flags, timer, startTime, flagMode = false, mode = 'easy', lang, msgKey = null, msgArg,
-      seed, replay = false, endedAt = 0;
+      endedAt = 0;
 
   // --- Persistenz (optional, fehlertolerant) ---
   const store = {
@@ -255,7 +239,6 @@
     document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
     showMessage();
     showBest();
-    showSeed();
   }
 
   // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
@@ -269,52 +252,11 @@
     return Math.max(29, Math.min(44, Math.floor(avail / W)));
   }
 
-  // --- Seeds: Stufe + 6 Zeichen, z. B. B-K3F9QX oder C20x12x35-K3F9QX ---
-  const SEED_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-  const PREFIX = { easy: 'B', medium: 'I', hard: 'E' };
-
-  const randomCode = () => Array.from({ length: 6 }, () => SEED_CHARS[Math.floor(Math.random() * SEED_CHARS.length)]).join('');
-  const levelPrefix = () => mode === 'custom' ? `C${W}x${H}x${M}` : PREFIX[mode];
-
-  // Liefert { mode, w, h, m, seed } in Normalform oder null
-  function parseSeed(str) {
-    const r = /^(?:([BIE])|C(\d+)X(\d+)X(\d+))-([23456789A-HJKMNP-Z]{6})$/.exec(str.trim().toUpperCase());
-    if (!r) return null;
-    if (r[1]) {
-      const m = Object.keys(PREFIX).find(k => PREFIX[k] === r[1]);
-      return { mode: m, ...PRESETS[m], seed: `${r[1]}-${r[5]}` };
-    }
-    const w = +r[2], h = +r[3], m = +r[4];
-    if (w < 5 || w > 50 || h < 5 || h > 30 || m < 1 || m > w * h - 1) return null;
-    return { mode: 'custom', w, h, m, seed: `C${w}x${h}x${m}-${r[5]}` };
-  }
-
-  // FNV-1a-Hash des Seeds als Startwert für mulberry32
-  function seededRandom(str) {
-    let a = 2166136261;
-    for (const ch of str) a = Math.imul(a ^ ch.charCodeAt(0), 16777619);
-    return () => {
-      a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
-  // Ohne Argument: neues Spiel mit zufälligem Seed; mit Seed-Text: genau dieses Spielfeld
-  function newGame(seedText) {
-    let p = null;
-    if (seedText !== undefined) {
-      p = parseSeed(seedText);
-      if (!p) return setMessage('invalidSeed', {});
-      mode = p.mode; diffSel.value = mode; store.set('ms-mode', mode);
-      customBox.classList.toggle('show', mode === 'custom');
-      if (mode === 'custom') { W = p.w; H = p.h; M = p.m; $('cw').value = W; $('ch').value = H; $('cm').value = M; }
-    }
+  function newGame() {
+    stopReplay();
     stopTimer();
     if (mode !== 'custom') ({ w: W, h: H, m: M } = PRESETS[mode]);
-    replay = !!p;
-    seed = p ? p.seed : levelPrefix() + '-' + randomCode();
+    rec = [];
     cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
     setFace('ok'); setMessage(null);
@@ -322,18 +264,11 @@
     render();
     updateMines();
     showBest();
-    showSeed();
   }
 
   // --- Gesicht: die Original-Gesichter aus der Statusleiste von Doom (faces/*.png) ---
   ['ok', 'ouch', 'dead', 'win'].forEach(f => { new Image().src = `faces/${f}.png`; });   // vorladen, damit der Wechsel nicht flackert
   const setFace = f => { resetBtn.style.backgroundImage = `url(faces/${f}.png)`; };
-
-  const seedNote = $('seedNote');
-  function showSeed() {
-    $('seedText').textContent = seed || '';
-    seedNote.textContent = replay ? T('replayNote') : '';
-  }
 
   function render() {
     boardEl.innerHTML = '';
@@ -360,9 +295,9 @@
   };
 
   // --- Spielfeld ohne Raten ---
-  // Die Minen werden erst beim ersten Klick gelegt: das Feld hängt von Seed und erstem Feld ab.
+  // Die Minen werden erst beim ersten Klick gelegt, nie auf oder neben das erste Feld.
   // Bleibt der Löser stecken, wird eine Mine am Rand des gelösten Bereichs verschoben und neu
-  // gelöst, bis das Feld allein mit den Zahlen und dem Minenzähler lösbar ist (deterministisch).
+  // gelöst, bis das Feld allein mit den Zahlen und dem Minenzähler lösbar ist.
   // Rechenbudget wächst nicht mit der Feldgröße, damit der erste Klick schnell bleibt
   const MAX_STEPS = 400, PERTURBS = 5, BUDGET = 150000;
   let solveState;   // Zustand des letzten solve()-Laufs, für perturb()
@@ -382,7 +317,7 @@
     const NB = cells.map((_, i) => neighbors(i));
     const exclude = new Set([start]);
     if (W * H - 9 >= M) NB[start].forEach(j => exclude.add(j));   // Startfeld ist eine 0
-    const rng = seededRandom(`${seed}/${start}`);
+    const rng = Math.random;
     placeMines(rng, exclude);
     let best = -1, bestMines = null;
     const steps = Math.min(MAX_STEPS, Math.ceil(BUDGET / (W * H)));
@@ -579,14 +514,50 @@
     } else if (c.flag) el.textContent = '🚩';
   }
 
+  // --- Aufnahme und Wiedergabe ---
+  // Jede Aktion wird als [ms seit dem ersten Aufdecken, 0 = aufdecken/Akkord | 1 = Flagge, Feld]
+  // aufgezeichnet. Ein Gewinn speichert sie mit den Minen als Demo zur Bestzeit.
+  let rec = [], replaying = false, replayTimers = [], replayMs = 0;
+
+  function act(a, i) {
+    const c = cells[i];
+    if (gameOver || (a === 'f' ? c.open : c.flag)) return;
+    if (!replaying) rec.push([firstClick ? 0 : elapsedMs(), a === 'f' ? 1 : 0, i]);
+    if (a === 'f') return toggleFlag(i);
+    if (firstClick) { firstClick = false; if (!replaying && !generate(i)) setMessage('mayGuess', {}); startTimer(); }
+    if (c.open) chord(i); else reveal(i);
+  }
+
+  const makeDemo = () => ({ w: W, h: H, m: M, mines: cells.flatMap((c, i) => c.mine ? [i] : []), ev: rec });
+
+  function playDemo(level, e) {
+    const d = e.demo, p = PRESETS[level];
+    if (!d || d.w !== p.w || d.h !== p.h || d.m !== p.m) return;
+    mode = level; diffSel.value = level; customBox.classList.remove('show');
+    newGame();
+    replaying = true; replayMs = e.ms;
+    d.mines.forEach(i => { cells[i].mine = true; });
+    cells.forEach((c, i) => { c.n = neighbors(i).filter(j => cells[j].mine).length; });
+    setMessage('replayOf', { t: e.name || '–' });
+    for (const [t, a, i] of d.ev) replayTimers.push(setTimeout(() => {
+      // Klick sichtbar machen: Feld kurz umranden, Gesicht zuckt beim Aufdecken
+      cellEls[i].animate([{ boxShadow: 'inset 0 0 0 3px var(--accent)' }, { boxShadow: 'inset 0 0 0 3px transparent' }], 450);
+      if (!a) { setFace('ouch'); setTimeout(() => { if (!gameOver) setFace('ok'); }, 150); }
+      act(a ? 'f' : 'o', i);
+    }, 600 + t));
+    boardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function stopReplay() {
+    replayTimers.forEach(clearTimeout);
+    replayTimers = []; replaying = false;
+  }
+
   function handlePrimary(i) {
     // Nach Spielende startet ein Klick aufs Feld ein neues Spiel (kurz danach nicht, gegen Doppelklicks)
     if (gameOver) { if (Date.now() - endedAt > 400) newGame(); return; }
-    if (flagMode) return toggleFlag(i);   // Flaggen-Modus: Tippen setzt/entfernt Flaggen
-    const c = cells[i];
-    if (c.flag) return;
-    if (firstClick) { firstClick = false; if (!generate(i)) setMessage('mayGuess', {}); startTimer(); }
-    if (c.open) chord(i); else reveal(i);
+    if (replaying) return;
+    act(flagMode ? 'f' : 'o', i);   // Flaggen-Modus: Tippen setzt/entfernt Flaggen
   }
 
   function lose(hit) {
@@ -602,14 +573,14 @@
 
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
-    const t = elapsedMs();
+    const t = replaying ? replayMs : elapsedMs();
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     setFace('win');
     let best = false;
-    if (mode !== 'custom' && !replay && (qualifies(scores[mode], t) || qualifies(readLocal(mode), t))) {
+    if (mode !== 'custom' && !replaying && (qualifies(scores[mode], t) || qualifies(readLocal(mode), t))) {
       best = true;
-      pending = { level: mode, ms: t, seed };
+      pending = { level: mode, ms: t, demo: makeDemo() };
       const name = store.get('ms-name');
       if (name) submitScore(name);
       else { nameForm.hidden = false; nameInput.focus(); }
@@ -617,24 +588,26 @@
     setMessage('won', { t, best });
   }
 
-  // --- Bestenliste: Top 5 je Stufe, online in Supabase, lokale Kopie als Fallback ---
+  // --- Bestenliste: Top 10 je Stufe, online in Supabase, lokale Kopie als Fallback ---
   // Der öffentliche (publishable/anon) Schlüssel darf im Quelltext stehen: die Tabelle
   // erlaubt per Row Level Security nur Lesen und Hinzufügen (siehe supabase/setup.sql).
   const SUPABASE_URL = 'https://qymwxjcyvwnoxvrebsih.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_AZz_1J7GqPa-mvhzZqoHkg_EtTH00VP';
-  const TOP = 5, LEVELS = Object.keys(PRESETS);
+  const TOP = 10, LEVELS = Object.keys(PRESETS);
   let scores = {}, online = false, saveFailed = false, pending = null;
-  let hasMs = true;   // false, solange die Tabelle noch keine Spalte ms hat (supabase/add-ms.sql)
+  // false, solange die Tabelle noch nicht auf ms + demo umgestellt ist (supabase/migrate.sql):
+  // dann nur ganze Sekunden und keine Wiedergaben online
+  let fullSchema = true;
 
-  // Zeiten werden in Millisekunden verglichen und gespeichert (ältere Einträge: t in Sekunden)
+  // Zeiten werden in Millisekunden verglichen und gespeichert (ältere lokale Einträge: t in Sekunden)
   const byTime = (a, b) => a.ms - b.ms || (a.date || '').localeCompare(b.date || '');
   const qualifies = (list, ms) => list.length < TOP || ms < list[TOP - 1].ms;
-  const withMs = e => e.ms === undefined ? { ...e, ms: e.t * 1000 } : e;
+  const normEntry = ({ name, ms, t, date, demo }) => ({ name, ms: ms ?? t * 1000, date, demo });
 
   function readLocal(m) {
-    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v.map(withMs); } catch {}
+    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v.map(normEntry); } catch {}
     const old = readBest(m);   // frühere einzelne Bestzeit übernehmen
-    return old ? [{ name: '', ms: old.t * 1000, seed: old.seed || '' }] : [];
+    return old ? [{ name: '', ms: old.t * 1000 }] : [];
   }
 
   async function api(path, opts = {}) {
@@ -647,18 +620,18 @@
   async function loadScores() {
     let shared = null;
     if (SUPABASE_URL) try {
-      const query = m => hasMs
-        ? `scores?select=name,time,ms,seed,created_at&level=eq.${m}&order=ms.asc.nullslast,time.asc,created_at.asc&limit=${TOP}`
-        : `scores?select=name,time,seed,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`;
+      const query = m => fullSchema
+        ? `scores?select=name,time,ms,demo,created_at&level=eq.${m}&order=ms.asc.nullslast,time.asc,created_at.asc&limit=${TOP}`
+        : `scores?select=name,time,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`;
       try { shared = await Promise.all(LEVELS.map(m => api(query(m)))); }
       catch (e) {
-        if (!hasMs || !/HTTP 4/.test(e.message)) throw e;   // nur bei unbekannter Spalte auf Sekunden zurückfallen
-        hasMs = false; shared = await Promise.all(LEVELS.map(m => api(query(m))));
+        if (!fullSchema || !/HTTP 4/.test(e.message)) throw e;   // nur bei fehlenden Spalten zurückfallen
+        fullSchema = false; shared = await Promise.all(LEVELS.map(m => api(query(m))));
       }
     } catch {}
     online = !!shared;
     LEVELS.forEach((m, i) => {
-      scores[m] = shared ? shared[i].map(r => ({ name: r.name, ms: r.ms ?? r.time * 1000, seed: r.seed, date: r.created_at })) : readLocal(m);
+      scores[m] = shared ? shared[i].map(r => ({ name: r.name, ms: r.ms ?? r.time * 1000, date: r.created_at, demo: r.demo })) : readLocal(m);
     });
     showBest();
   }
@@ -669,17 +642,18 @@
     if (!p) return;
     name = name.trim().slice(0, 16);
     store.set('ms-name', name);
-    const entry = { name, ms: p.ms, seed: p.seed, date: new Date().toISOString() };
+    const entry = { name, ms: p.ms, date: new Date().toISOString(), demo: p.demo };
     store.set('ms-top-' + p.level, JSON.stringify([...readLocal(p.level), entry].sort(byTime).slice(0, TOP)));
     saveFailed = false;
     if (online) try {
       await api('scores', { method: 'POST', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), ...(hasMs && { ms: p.ms }), seed: p.seed, name }) });
+        body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), ...(fullSchema && { ms: p.ms, demo: p.demo }), name }) });
     } catch { saveFailed = true; }
     await loadScores();
+    showScores(true);   // nach einem neuen Eintrag die Liste zeigen
   }
 
-  // Gespeichert als {t, seed}; ältere Einträge sind nur eine Zahl
+  // Frühere einzelne Bestzeit: {t, …} in Sekunden; noch ältere Einträge sind nur eine Zahl
   function readBest(m) {
     const raw = store.get('ms-best-' + m);
     if (raw === null) return null;
@@ -702,12 +676,12 @@
         cell(row, 'rank', i + 1 + '.');
         cell(row, 'name', e.name || '–').title = e.name || '';
         cell(row, 'time', fmtTime(e.ms));
-        const seedCell = cell(row, 'seed', '');
-        if (e.seed) {
+        const playCell = cell(row, 'play', '');
+        if (e.demo) {
           const btn = document.createElement('button');
-          btn.textContent = e.seed; btn.title = T('playSeed');
-          btn.addEventListener('click', () => newGame(e.seed));
-          seedCell.appendChild(btn);
+          btn.textContent = '▶'; btn.title = T('watch'); btn.setAttribute('aria-label', T('watch'));
+          btn.addEventListener('click', () => playDemo(m, e));
+          playCell.appendChild(btn);
         }
       });
     }
@@ -716,6 +690,15 @@
     nameBtn.hidden = !name;
     if (name) nameBtn.textContent = T('player', name);
   }
+
+  // Bestenliste per Button ein- und ausblenden
+  const scoresBox = $('scoresBox'), scoresBtn = $('scoresBtn');
+  function showScores(open) {
+    scoresBox.hidden = !open;
+    scoresBtn.setAttribute('aria-expanded', open);
+    scoresBtn.classList.toggle('active', open);
+  }
+  scoresBtn.addEventListener('click', () => showScores(scoresBox.hidden));
 
   nameForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -745,10 +728,10 @@
     if (i < 0) return;
     if (e.pointerType !== 'touch') {
       if (e.button === 0) {
-        if (!gameOver) setFace('ouch');
+        if (!gameOver && !replaying) setFace('ouch');
         handlePrimary(i);
       } else if (e.button === 2) {
-        if (cells[i].open) chord(i); else toggleFlag(i);
+        if (!replaying) act(cells[i].open ? 'o' : 'f', i);   // Rechtsklick auf eine Zahl: Akkord
       }
       return;
     }
@@ -756,7 +739,7 @@
     touch = { id: e.pointerId, i, x: e.clientX, y: e.clientY, done: false };
     touch.timer = setTimeout(() => {
       touch.done = true;
-      if (!cells[i].open) toggleFlag(i);
+      if (!replaying && !cells[i].open) act('f', i);
     }, 350);
   });
   boardEl.addEventListener('pointermove', e => {
@@ -776,16 +759,6 @@
 
   // --- UI ---
   resetBtn.addEventListener('click', () => newGame());
-  const seedInput = $('seedInput');
-  const playSeed = () => { newGame(seedInput.value); if (!msgKey) seedInput.value = ''; };
-  $('playSeed').addEventListener('click', playSeed);
-  seedInput.addEventListener('keydown', e => { if (e.key === 'Enter') playSeed(); });
-  $('copySeed').addEventListener('click', () => {
-    navigator.clipboard?.writeText(seed).then(() => {
-      seedNote.textContent = T('copied');
-      setTimeout(showSeed, 1500);
-    }, () => {});
-  });
   function toggleFlagMode() {
     flagMode = !flagMode;
     flagBtn.classList.toggle('active', flagMode);
