@@ -49,10 +49,6 @@
   body { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
     padding: 16px; -webkit-tap-highlight-color: transparent; }
   h1 { font-size: 1.5rem; margin: 4px 0 12px; letter-spacing: .5px; }
-  .lang { position: absolute; top: 12px; right: 12px; display: flex; border: 1px solid var(--border);
-    border-radius: 8px; overflow: hidden; }
-  .lang button { border: 0; border-radius: 0; padding: 4px 9px; font-size: .8rem; color: var(--muted); }
-  .lang button.active { background: var(--accent); color: #fff; }
 
   .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 12px; }
   button, select {
@@ -64,6 +60,7 @@
   .tool { width: 40px; padding: 8px 0; font-weight: 800; }
   .tool[hidden] { display: none; }
   #flagMode { width: 96px; padding: 4px 0; font-size: 1.6rem; line-height: 1.2; }
+  #settingsBtn { width: 56px; padding: 4px 0; font-size: 1.4rem; line-height: 1.37; }
 
   .custom { display: none; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
   .custom.show { display: flex; }
@@ -77,6 +74,27 @@
   .counter.right { text-align: right; }
   .face { width: 56px; height: 68px; padding: 0; background: var(--panel) center 2px / 48px auto no-repeat;
           image-rendering: pixelated; }
+  /* Stil DOOM: Wand aus den Schädeln von SKULWALL (per Image Quilting zu einer großen, nahtlosen Kachel zusammengesetzt), Vignette am Rand, Sprites aus Freedoom (doom/, BSD-Lizenz), dunkle Farben */
+  :root[data-look="doom"] {
+    --bg: #1a1410; --text: #e6d8b8; --muted: #a08f72;
+    --panel: #282828;   /* Spielbereich, Knöpfe und Menüs; die offenen Felder haben dieselbe Farbe */
+    --cell: #5b4a39; --cell-hover: #6d5a45; --cell-open: var(--panel); --border: #4d3d2e;
+    --accent: #c0281e; --mine: #8f1d16;
+    --n1: #6ea1ff; --n2: #5fcf80; --n3: #ff6b5e; --n4: #c08cff; --n5: #e8a060; --n6: #5fd6d6; --n7: #ddd; --n8: #aaa;
+  }
+  [data-look="doom"] body { background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, .5)),
+    linear-gradient(rgba(0, 0, 0, .45), rgba(0, 0, 0, .45)), #1a1410 url(doom/wall.png) 0 0 / 1024px;
+    image-rendering: pixelated; }
+  [data-look="doom"] h1 { color: #d02a1e; text-transform: uppercase; letter-spacing: 3px; font-weight: 900;
+    text-shadow: 2px 2px 0 #000, 0 0 8px #000; }
+  [data-look="doom"] .help, [data-look="doom"] .message { text-shadow: 0 1px 3px #000; }
+  .di { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -.2em; background: center / contain no-repeat;
+    image-rendering: pixelated; }
+  .di-flag { background-image: url(doom/flag.png); }
+  .di-mine { background-image: url(doom/mine.png); }
+  .di-gear { background-image: url(doom/gear.png); }
+  .cell.mine-hit .di-mine { background-image: url(doom/boom.png); }
+  .face.emoji { width: auto; height: auto; padding: 4px 10px; font-size: 2rem; line-height: 1.2; }   /* Stil Klassisch */
 
   .board-wrap { overflow: auto; max-width: calc(100vw - 58px); }
   .board { display: grid; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
@@ -90,6 +108,12 @@
   .cell.open { background: var(--cell-open); cursor: default; }
   .cell.mine-hit { background: var(--mine); }
   .cell.wrong { background: var(--cell-open); color: var(--mine); }
+  /* DOOM: keine Fugen; jedes verdeckte Feld zeigt eine zufällige Platte (--plate, gesetzt in render()) aus doom/plates/,
+     Platten aus STARGR2 mit eigenen dunklen Rändern */
+  [data-look="doom"] .cell { box-shadow: none; }
+  [data-look="doom"] .cell:not(.open):not(.wrong) { background: var(--plate) 0 0 / 100% 100%; image-rendering: pixelated; }
+  [data-look="doom"] .cell:not(.open):not(.wrong):hover {
+    background: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), var(--plate) 0 0 / 100% 100%; }
   .n1{color:var(--n1)}.n2{color:var(--n2)}.n3{color:var(--n3)}.n4{color:var(--n4)}
   .n5{color:var(--n5)}.n6{color:var(--n6)}.n7{color:var(--n7)}.n8{color:var(--n8)}
 
@@ -100,9 +124,9 @@
   .replaybar[hidden] { display: none; }
   .replaybar > button { width: 44px; padding: 6px 0; }
   .replaybar button:disabled { opacity: .4; cursor: default; }
-  .speeds { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .speeds button { border: 0; border-radius: 0; padding: 6px 10px; font-variant-numeric: tabular-nums; }
-  .player { max-width: 11em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .speeds, .views { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .views { margin-top: 10px; }
+  :is(.speeds, .views) button { border: 0; border-radius: 0; padding: 6px 10px; font-variant-numeric: tabular-nums; }
 
   .overlay { position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, .55);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -117,7 +141,7 @@
   .result:empty { display: none; }
   button.primary { margin-top: 12px; background: var(--accent); color: #fff; border-color: var(--accent); }
   .scores { margin-top: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    padding: 6px 14px; border-collapse: separate; font-size: .9rem; }
+    padding: 6px 14px; border-collapse: separate; border-spacing: 0; font-size: .9rem; }   /* ohne Lücken in der Hervorhebung */
   .scores td { padding: 4px 6px; }
   .scores tr.level td { font-weight: 700; padding-top: 12px; }
   .scores tbody tr.level:first-child td { padding-top: 4px; }
@@ -134,26 +158,35 @@
   .nameform[hidden] { display: none; }
   .nameform input { width: 160px; font: inherit; padding: 6px 8px; border-radius: 6px;
     border: 1px solid var(--border); background: var(--panel); color: var(--text); }
-  .scores td.time { white-space: nowrap; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 20px; }
+  .scores td.device { color: var(--muted); width: 2.4em; padding: 4px 8px; text-align: center; }
+  .scores td.clicks { color: var(--muted); white-space: nowrap; text-align: right; font-size: .8rem;
+    font-variant-numeric: tabular-nums; padding-left: 10px; }
+  .scores td.clicks svg { width: 11px; height: 11px; margin-left: 2px; vertical-align: -1px; fill: none; stroke: currentColor;
+    stroke-width: 2.5; stroke-linejoin: round; }
+  .scores td.device svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; }
+  .scores td.time { white-space: nowrap; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding-left: 14px; }
   .scores td.play { text-align: right; padding-left: 10px; }
   .scores td.play button { background: none; border: 0; padding: 0 4px; color: var(--muted); font-size: .9rem; }
   .scores td.play button:hover { color: var(--accent); }
+  .settings { display: grid; grid-template-columns: auto 1fr; gap: 14px 16px; align-items: center; width: 100%; margin-top: 14px; }
+  .settings > label, .settings > span { color: var(--muted); }
+  .settings .views { margin-top: 0; justify-self: start; }
+  .settings input:not([type]), .settings select { width: 100%; font: inherit; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text); }
+  .settings .hint { grid-column: 1 / -1; margin-top: -8px; color: var(--muted); font-size: .8rem; }
+  .scoresmode { color: var(--muted); font-size: .85rem; width: 100%; }
+  .volume { display: flex; align-items: center; gap: 10px; }
+  .volume input { flex: 1; accent-color: var(--accent); }
+  .volume span { width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
-  <div class="lang" role="group" aria-label="Language">
-    <button data-lang="de">DE</button><button data-lang="en">EN</button>
-  </div>
-  <h1>💣 Minesweeper</h1>
+  <h1><span id="titleIcon">💣</span> Minesweeper</h1>
 
   <div class="controls">
-    <button id="nameBtn" class="player"></button>
-    <select id="difficulty" data-i18n-aria="difficulty">
-      <option value="easy" data-i18n="easy"></option>
-      <option value="medium" data-i18n="medium"></option>
-      <option value="hard" data-i18n="hard"></option>
-      <option value="custom" data-i18n="custom"></option>
-    </select>
+    <button id="settingsBtn" class="tool" data-i18n-title="settings" data-i18n-aria="settings"
+            aria-haspopup="dialog" aria-controls="settingsOverlay">⚙️</button>
     <button id="flagMode" class="tool" data-i18n-title="flagModeTitle" data-i18n-aria="flagModeTitle" aria-pressed="false">🚩</button>
     <button id="install" class="tool" data-i18n-title="install" data-i18n-aria="install" hidden>📲</button>
   </div>
@@ -185,7 +218,7 @@
   <div class="message" id="message"></div>
   <button id="scoresBtn" data-i18n="scores" aria-haspopup="dialog" aria-controls="scoresOverlay"></button>
 
-  <!-- Bestenliste als Overlay: beim Laden und nach jeder Runde -->
+  <!-- Bestenliste als Overlay: nach jedem Gewinn und über den 🏆-Knopf -->
   <div class="overlay" id="scoresOverlay" hidden>
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="scoresTitle">
       <div class="dialoghead">
@@ -199,11 +232,51 @@
         <input id="nameInput" maxlength="16" required autocomplete="nickname" data-i18n-placeholder="yourName">
         <button data-i18n="save"></button>
       </form>
+      <div class="scoresmode" id="scoresMode"></div>
+      <div class="views" role="group" data-i18n-aria="scoreView">
+        <button data-view="local" data-i18n="viewLocal"></button><button data-view="online" data-i18n="viewOnline"></button>
+      </div>
       <table class="scores" id="scores"><tbody></tbody></table>
       <div class="scoresnote" id="scoresNote"></div>
       <button id="overlayNewGame" class="primary" data-i18n="newGame"></button>
     </div>
   </div>
+  <!-- Einstellungen: Lautstärke, Sprache, Schwierigkeit, Spielername -->
+  <div class="overlay" id="settingsOverlay" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="dialoghead">
+        <h2 id="settingsTitle" data-i18n="settings"></h2>
+        <button id="closeSettings" data-i18n-title="close" data-i18n-aria="close">✕</button>
+      </div>
+      <div class="settings">
+        <label for="volume" data-i18n="volume"></label>
+        <div class="volume"><input type="range" id="volume" min="0" max="100" step="5"><span id="volumeVal"></span></div>
+        <span data-i18n="language"></span>
+        <div class="views lang" role="group" aria-label="Language">
+          <button data-lang="de">Deutsch</button><button data-lang="en">English</button>
+        </div>
+        <label for="difficulty" data-i18n="difficulty"></label>
+        <select id="difficulty">
+          <option value="easy" data-i18n="easy"></option>
+          <option value="medium" data-i18n="medium"></option>
+          <option value="hard" data-i18n="hard"></option>
+          <option value="custom" data-i18n="custom"></option>
+        </select>
+        <span data-i18n="look"></span>
+        <div class="views" id="lookMode" role="group" data-i18n-aria="look">
+          <button data-look="classic" data-i18n="lookClassic"></button><button data-look="doom">DOOM</button>
+        </div>
+        <span data-i18n="gameMode"></span>
+        <div class="views" id="logicMode" role="group" data-i18n-aria="gameMode">
+          <button data-logic="0" data-i18n="modeStandard"></button><button data-logic="1" data-i18n="modeLogic"></button>
+        </div>
+        <div class="hint" data-i18n="logicHint"></div>
+        <label for="settingsName" data-i18n="playerName"></label>
+        <input id="settingsName" maxlength="16" autocomplete="nickname" data-i18n-placeholder="yourName">
+      </div>
+    </div>
+  </div>
+
   <div class="help" data-i18n="help"></div>
 
 <script>
@@ -224,15 +297,23 @@
             'Klick auf eine Zahl mit passend vielen Flaggen deckt die Nachbarn auf. ' +
             'Der erste Klick ist immer sicher, danach lässt sich alles ohne Raten aus den Zahlen ableiten. ' +
             'Mit ▶ in der Bestenliste lässt sich eine Bestzeit als Wiedergabe ansehen (mit Pause, Neustart und Tempo 1×, ½×, ¼×).',
-      lost: 'Boom! Verloren.', won: ms => `Gewonnen in ${fmtTime(ms)}! 🎉`,
-      newBest: r => ` Platz ${r}!`, checking: ' Bestenliste wird geprüft …', scores: '🏆 Bestzeiten',
+      lost: 'Boom! Verloren.', won: (ms, c) => `Gewonnen in ${fmtTime(ms)}${c ? ' mit ' + T('clicks', c) : ''}! 🎉`,
+      newBest: r => ' ' + [r.local && `Platz ${r.local} auf diesem Gerät`, r.online && `Platz ${r.online} online`].filter(Boolean).join(', ') + '!', checking: ' Bestenliste wird geprüft …', scores: '🏆 Bestzeiten',
       topTen: 'Dein Name für die Bestenliste:', yourName: 'Name', save: 'Speichern',
-      localOnly: 'Nur auf diesem Gerät gespeichert', saveFailed: 'Online-Speichern fehlgeschlagen',
-      player: n => `👤 ${n}`, changeName: 'Name für künftige Einträge:',
-      refresh: 'Bestzeiten neu laden', close: 'Schließen', setName: '👤 Name festlegen', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
+      offline: 'Online-Bestenliste nicht erreichbar', saveFailed: 'Online-Speichern fehlgeschlagen',
+      scoreView: 'Bestenliste', viewLocal: 'Dieses Gerät', viewOnline: 'Online',
+      refresh: 'Bestzeiten neu laden', close: 'Schließen', watch: 'Wiedergabe ansehen', replayOf: n => `▶ Wiedergabe: ${n}`,
       pause: 'Pause', resume: 'Weiter', restartReplay: 'Wiedergabe neu starten', replaySpeed: 'Tempo',
       mayGuess: 'So viele Minen: hier muss eventuell geraten werden.',
       install: 'Als App installieren',
+      clicks: n => n === 1 ? '1 Klick' : `${n} Klicks`,
+      settings: 'Einstellungen', volume: 'Lautstärke', language: 'Sprache', playerName: 'Spielername',
+      look: 'Stil', lookClassic: 'Klassisch',
+      gameMode: 'Spielmodus', modeStandard: 'Standard', modeLogic: 'Nur Logik',
+      logicHint: 'Nur Logik: jedes Feld lässt sich aus den Zahlen in seiner Nähe ableiten, ohne Minenzähler. ' +
+                 'Bei Standard braucht es manchmal den Minenzähler oder lange Fallunterscheidungen.',
+      scoresMode: l => 'Spielmodus: ' + (l ? 'Nur Logik' : 'Standard'),
+      device: d => 'Gespielt auf: ' + { pc: 'Computer', mobile: 'Smartphone', tablet: 'Tablet' }[d],
     },
     en: {
       difficulty: 'Difficulty', easy: 'Beginner (9×9, 10)', medium: 'Intermediate (16×16, 40)',
@@ -243,15 +324,23 @@
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
             'Press ▶ in the best times to watch a replay of that game (with pause, restart and speed 1×, ½×, ¼×).',
-      lost: 'Boom! You lost.', won: ms => `You won in ${fmtTime(ms)}! 🎉`,
-      newBest: r => ` Rank ${r}!`, checking: ' Checking the best times …', scores: '🏆 Best times',
+      lost: 'Boom! You lost.', won: (ms, c) => `You won in ${fmtTime(ms)}${c ? ' with ' + T('clicks', c) : ''}! 🎉`,
+      newBest: r => ' ' + [r.local && `rank ${r.local} on this device`, r.online && `rank ${r.online} online`].filter(Boolean).join(', ').replace('r', 'R') + '!', checking: ' Checking the best times …', scores: '🏆 Best times',
       topTen: 'Your name for the best times:', yourName: 'Name', save: 'Save',
-      localOnly: 'Saved on this device only', saveFailed: 'Saving online failed',
-      player: n => `👤 ${n}`, changeName: 'Name for future entries:',
-      refresh: 'Reload best times', close: 'Close', setName: '👤 Set name', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
+      offline: 'Online best times are not reachable', saveFailed: 'Saving online failed',
+      scoreView: 'Best times list', viewLocal: 'This device', viewOnline: 'Online',
+      refresh: 'Reload best times', close: 'Close', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
       pause: 'Pause', resume: 'Resume', restartReplay: 'Restart replay', replaySpeed: 'Speed',
       mayGuess: 'So many mines that this board may need a guess.',
       install: 'Install as app',
+      clicks: n => n === 1 ? '1 click' : `${n} clicks`,
+      settings: 'Settings', volume: 'Volume', language: 'Language', playerName: 'Player name',
+      look: 'Style', lookClassic: 'Classic',
+      gameMode: 'Game mode', modeStandard: 'Standard', modeLogic: 'Pure logic',
+      logicHint: 'Pure logic: every cell can be worked out from the numbers near it, without the mine counter. ' +
+                 'Standard sometimes needs the mine counter or long case analysis.',
+      scoresMode: l => 'Game mode: ' + (l ? 'Pure logic' : 'Standard'),
+      device: d => 'Played on: ' + { pc: 'computer', mobile: 'smartphone', tablet: 'tablet' }[d],
     },
   };
 
@@ -268,6 +357,110 @@
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
+
+  // Spielmodus: false = Standard, true = "Nur Logik" (jedes Feld aus den Zahlen in der Nähe ableitbar,
+  // ohne Minenzähler); eigene Bestenlisten je Modus
+  let logic = store.get('ms-logic') === '1';
+
+  // --- Töne: per Web Audio erzeugt (keine Dateien), je nach Stil (look) eigene Klänge,
+  // Lautstärke 0–100 aus den Einstellungen ---
+  let volume = Math.max(0, Math.min(100, +(store.get('ms-volume') ?? 50) || 0)), audio = null, crunchCurve = null;
+  let booted = false;   // erst nach dem Laden der Seite spielt newGame() den Startklang
+  // Jeder Klang bekommt die Bausteine aus sound(): tone, noise und crunch (Verzerrer für DOOM)
+  const POWER = [[82.4, 123.5, 164.8], [82.4, 123.5, 164.8], [110, 164.8, 220]];   // Quint-Akkorde E, E, A
+  const SOUNDS = {
+    classic: {
+      open: ({ tone }) => tone(700, 0, .05),
+      area: ({ tone }) => tone(450, 0, .18, 'triangle', .3, 1100),   // mehrere Felder auf einmal
+      flag: ({ tone }) => { tone(660, 0, .06, 'square', .1); tone(990, .06, .08, 'square', .1); },
+      unflag: ({ tone }) => { tone(990, 0, .06, 'square', .1); tone(660, .06, .08, 'square', .1); },
+      win: ({ tone }) => [523, 659, 784, 1047].forEach((f, k) => tone(f, k * .1, k === 3 ? .45 : .12, 'square', .12)),
+      boom: ({ tone, noise }) => { noise(0, .8, .8, 'lowpass', 1500, 80); tone(120, 0, .5, 'sine', .6, 40); },
+    },
+    doom: {
+      open: ({ tone, noise }) => { noise(0, .07, .5, 'lowpass', 900, 200); tone(95, 0, .08, 'square', .25, 50); },
+      area: ({ noise }) => noise(0, .35, .5, 'bandpass', 300, 2400, 2),   // zischende Tür
+      flag: ({ noise }) => { noise(0, .04, .7, 'bandpass', 2600, 0, 6); noise(.09, .05, .7, 'bandpass', 1900, 0, 6); },   // Pumpe
+      unflag: ({ noise }) => { noise(0, .05, .7, 'bandpass', 1900, 0, 6); noise(.09, .04, .7, 'bandpass', 2600, 0, 6); },
+      win: ({ tone, crunch }) => {
+        const c = crunch();
+        POWER.forEach((chord, k) => chord.forEach(f => tone(f, k * .15, k === 2 ? .7 : .12, 'sawtooth', .12, 0, c)));
+      },
+      boom: ({ tone, noise, crunch }) => {
+        noise(0, 1.4, .9, 'lowpass', 2500, 50);
+        tone(70, 0, 1, 'sine', .8, 25);
+        tone(55, 0, .6, 'square', .3, 30, crunch());
+      },
+      // nur im Stil DOOM (Klassisch hat dafür keine Töne): Todesschrei, Spielstart, Einstellungen, Menü schließen
+      die: ({ tone, crunch }) => tone(420, 0, .6, 'sawtooth', .2, 90, crunch()),
+      start: ({ noise, tone }) => { noise(0, .6, .5, 'bandpass', 200, 3000, 3); tone(220, .1, .5, 'sine', .2, 880); },   // Teleporter
+      menu: ({ noise }) => noise(0, .06, .6, 'lowpass', 1200, 300),
+      setting: ({ noise, tone }) => { noise(0, .05, .7, 'highpass', 1500); tone(160, 0, .06, 'square', .2, 60); },
+      close: ({ noise, tone }) => { noise(0, .05, .7, 'highpass', 1500); tone(160, 0, .06, 'square', .2, 60); },
+    },
+  };
+  // DOOM spielt die Freedoom-Klänge (doom/*.wav); lassen die sich nicht laden (manche Browser bei
+  // file://), bleibt es bei den erzeugten DOOM-Klängen aus SOUNDS.doom
+  const doomAudio = {};
+  let doomFilesFail = false;
+  const doomFile = name => (doomAudio[name] ??= Object.assign(new Audio(`doom/${name}.wav`), { preload: 'auto' }));
+  function sound(name) {
+    if (!volume) return;
+    if (look === 'doom' && !doomFilesFail) {
+      try {
+        const a = doomFile(name).cloneNode();   // Kopie, damit sich schnelle Klicks überlagern dürfen
+        a.volume = (volume / 100) ** 2;
+        a.play().catch(e => { if (e?.name === 'NotSupportedError') { doomFilesFail = true; synth(name); } });
+        return;
+      } catch { doomFilesFail = true; }
+    }
+    synth(name);
+  }
+  function synth(name) {
+    const make = SOUNDS[look][name];
+    if (!make) return;   // Klang gibt es in diesem Stil nicht
+    try {
+      audio ??= new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();   // Browser starten Audio erst nach einer Eingabe
+    } catch { return; }
+    const t0 = audio.currentTime, out = audio.createGain();
+    out.gain.value = (volume / 100) ** 2;   // quadratisch, damit der Regler gleichmäßiger wirkt
+    out.connect(audio.destination);
+    // Ton ab `at` Sekunden, `dur` lang, optional gleitend bis zur Frequenz `to`
+    const tone = (freq, at, dur, type = 'triangle', peak = .3, to, dest = out) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0 + at);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + at + dur);
+      g.gain.setValueAtTime(0, t0 + at);
+      g.gain.linearRampToValueAtTime(peak, t0 + at + .005);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + at + dur);
+      o.connect(g).connect(dest);
+      o.start(t0 + at); o.stop(t0 + at + dur + .02);
+    };
+    // Rauschen durch einen Filter, dessen Frequenz von `from` nach `to` gleitet (to = 0: fest)
+    const noise = (at, dur, peak, type, from, to, q = 1) => {
+      const len = Math.ceil(audio.sampleRate * dur), buf = audio.createBuffer(1, len, audio.sampleRate), d = buf.getChannelData(0);
+      for (let k = 0; k < len; k++) d[k] = Math.random() * 2 - 1;
+      const src = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+      src.buffer = buf; f.type = type; f.Q.value = q;
+      f.frequency.setValueAtTime(from, t0 + at);
+      if (to) f.frequency.exponentialRampToValueAtTime(to, t0 + at + dur);
+      g.gain.setValueAtTime(peak, t0 + at);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + at + dur);
+      src.connect(f).connect(g).connect(out);
+      src.start(t0 + at);
+    };
+    // Verzerrer (weiche Sättigung) vor dem Ausgang
+    const crunch = () => {
+      crunchCurve ??= Float32Array.from({ length: 1024 }, (_, k) => { const x = k / 511.5 - 1; return 41 * x / (1 + 40 * Math.abs(x)); });
+      const w = audio.createWaveShaper();
+      w.curve = crunchCurve;
+      w.connect(out);
+      return w;
+    };
+    make({ tone, noise, crunch });
+  }
 
   // Zeit in Millisekunden als "12,345 s" bzw. "12.345 s"
   const fmtTime = ms => (ms / 1000).toFixed(3).replace('.', lang === 'de' ? ',' : '.') + ' s';
@@ -290,16 +483,21 @@
   // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
   function setMessage(key, arg) { msgKey = key; msgArg = arg; showMessage(); }
   function showMessage() {
-    msgEl.textContent = msgKey ? T(msgKey, msgArg.t) + (msgArg.rank ? T('newBest', msgArg.rank) : msgArg.checking ? T('checking') : '') : '';
+    msgEl.textContent = msgKey ? T(msgKey, msgArg.t, msgArg.clicks) + (msgArg.rank ? T('newBest', msgArg.rank) : msgArg.checking ? T('checking') : '') : '';
     $('overlayMsg').textContent = gameOver ? msgEl.textContent : '';   // Ergebnis der Runde oben im Overlay
   }
 
   function cellSize() {
     const avail = Math.min(window.innerWidth, 1400) - 60;
-    return Math.max(29, Math.min(44, Math.floor(avail / W)));
+    const base = Math.max(29, Math.min(44, Math.floor(avail / W)));
+    // Ist links/rechts und nach unten noch Platz, wachsen die Felder bis 56px, solange das Brett ganz ins Fenster passt
+    // (unter dem Brett bleiben 80px für Rand, Meldung und Wiedergabeleiste)
+    const top = boardEl.getBoundingClientRect().top + window.scrollY;
+    const fit = Math.floor(Math.min((window.innerWidth - 60) / W, (window.innerHeight - top - 80) / H));
+    return Math.max(base, Math.min(56, fit));
   }
 
-  function newGame() {
+  function newGame(quiet) {   // quiet: ohne Startklang (z. B. beim Wechsel des Spielmodus)
     stopReplay();
     showScores(false);
     newEntry = null;
@@ -313,20 +511,74 @@
     render();
     updateMines();
     showBest();
+    if (booted && !quiet) sound('start');   // nicht beim Laden der Seite
   }
 
-  // --- Gesicht: die Original-Gesichter aus der Statusleiste von Doom (faces/*.png) ---
-  ['ok', 'ouch', 'dead', 'win'].forEach(f => { new Image().src = `faces/${f}.png`; });   // vorladen, damit der Wechsel nicht flackert
-  const setFace = f => { resetBtn.style.backgroundImage = `url(faces/${f}.png)`; };
+  // --- Gesicht je nach Stil: Klassisch mit Smileys, DOOM mit den Original-Gesichtern aus der
+  // Statusleiste von Doom (faces/*.png) ---
+  const SMILEYS = { ok: '🙂', ouch: '😮', dead: '😵', win: '😎' };
+  let look = store.get('ms-style') === 'doom' ? 'doom' : 'classic', face = 'ok';
+  function setFace(f) {
+    face = f;
+    const doom = look === 'doom';
+    resetBtn.classList.toggle('emoji', !doom);
+    resetBtn.textContent = doom ? '' : SMILEYS[f];
+    resetBtn.style.backgroundImage = doom ? `url(faces/${f}.png)` : '';
+  }
+  // Symbole je Stil: Emojis oder Sprites (CSS-Klassen .di-*, Bilder in doom/)
+  const EMOJI = { flag: '🚩', mine: '💣', gear: '⚙️' };
+  const icon = name => look === 'doom' ? `<i class="di di-${name}"></i>` : EMOJI[name];
+  function setLook(l) {
+    look = l;
+    store.set('ms-style', l);
+    document.documentElement.dataset.look = l;
+    // vorladen, damit der Wechsel nicht flackert
+    if (l === 'doom') {
+      Object.keys(SMILEYS).forEach(f => { new Image().src = `faces/${f}.png`; });
+      Object.keys(SOUNDS.doom).forEach(doomFile);
+    }
+    setFace(face);
+    $('titleIcon').innerHTML = icon('mine');
+    flagBtn.innerHTML = icon('flag');
+    $('settingsBtn').innerHTML = icon('gear');
+    if (cells) {   // Symbole auf dem Feld tauschen (falsche Flaggen ❌ bleiben)
+      cells.forEach((c, i) => {
+        if (c.open ? c.mine : c.flag && !cellEls[i].classList.contains('wrong')) cellEls[i].innerHTML = icon(c.open ? 'mine' : 'flag');
+      });
+      updateMines();
+    }
+    document.querySelectorAll('#lookMode button').forEach(b => {
+      const on = b.dataset.look === l;
+      b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+    });
+  }
 
+  // Platten für verdeckte Felder im Stil DOOM, je Feld zufällig (nur Optik, nicht Teil von Demos)
+  const PLATES = ['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P10', 'P12'];
+  const PLATE_MAX = { P10: 3, P12: 3 };   // die blutigen höchstens so oft pro Spiel
+  function pickPlates(n) {
+    // Felder in zufälliger Reihenfolge belegen, damit die begrenzten Platten nicht immer oben landen
+    const order = [...Array(n).keys()];
+    for (let k = n - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
+    const free = PLATES.filter(p => !PLATE_MAX[p]), used = {}, out = [];
+    const any = list => list[Math.floor(Math.random() * list.length)];
+    for (const i of order) {
+      let p = any(PLATES);
+      if (PLATE_MAX[p] && (used[p] = (used[p] || 0) + 1) > PLATE_MAX[p]) p = any(free);
+      out[i] = p;
+    }
+    return out;
+  }
   function render() {
     boardEl.innerHTML = '';
     boardEl.style.setProperty('--size', cellSize() + 'px');
     boardEl.style.gridTemplateColumns = `repeat(${W}, var(--size))`;
+    const plates = pickPlates(cells.length);
     cellEls = cells.map((_, i) => {
       const d = document.createElement('div');
       d.className = 'cell';
       d.dataset.i = i;
+      d.style.setProperty('--plate', `url(doom/plates/${plates[i]}.png)`);
       boardEl.appendChild(d);
       return d;
     });
@@ -346,7 +598,8 @@
   // --- Spielfeld ohne Raten ---
   // Die Minen werden erst beim ersten Klick gelegt, nie auf oder neben das erste Feld.
   // Bleibt der Löser stecken, wird eine Mine am Rand des gelösten Bereichs verschoben und neu
-  // gelöst, bis das Feld allein mit den Zahlen und dem Minenzähler lösbar ist.
+  // gelöst, bis das Feld allein mit den Zahlen und dem Minenzähler lösbar ist. Im Modus "Nur Logik"
+  // (`logic`) zählen nur Schlüsse aus den Zahlen in der Nähe: kein Minenzähler, kein ganzer Rand.
   // Rechenbudget wächst nicht mit der Feldgröße, damit der erste Klick schnell bleibt
   const MAX_STEPS = 400, PERTURBS = 5, BUDGET = 150000;
   let solveState;   // Zustand des letzten solve()-Laufs, für perturb()
@@ -491,12 +744,13 @@
         for (const v of info(i).u) for (const j of NB[v]) if (st[j] === 1 && cells[j].n) group.add(j);
         const cons = [...group].map(info).filter(c => c.u.length);
         const vars = [...new Set(cons.flatMap(c => c.u))];
-        const r = enumerate(vars, cons, R, () => true);
+        const r = enumerate(vars, cons, logic ? vars.length : R, () => true);   // Nur Logik: ohne Minenzähler
         if (r && apply(vars, r)) progress = true;
       }
       if (progress) continue;
 
-      // 3. Ganzer Rand zusammen mit dem Minenzähler (für das Ende des Spiels)
+      // 3. Ganzer Rand zusammen mit dem Minenzähler (für das Ende des Spiels), nicht bei "Nur Logik"
+      if (logic) break;
       const cons = frontier.map(info).filter(c => c.u.length);
       const vars = [...new Set(cons.flatMap(c => c.u))];
       let hidden = 0;
@@ -549,6 +803,7 @@
     c.flag = !c.flag;
     flags += c.flag ? 1 : -1;
     drawCell(i); updateMines();
+    sound(c.flag ? 'flag' : 'unflag');
     if (navigator.vibrate) navigator.vibrate(15);
   }
 
@@ -558,9 +813,9 @@
     el.textContent = '';
     if (c.open) {
       el.classList.add('open');
-      if (c.mine) el.textContent = '💣';
+      if (c.mine) el.innerHTML = icon('mine');
       else if (c.n) { el.textContent = c.n; el.classList.add('n' + c.n); }
-    } else if (c.flag) el.textContent = '🚩';
+    } else if (c.flag) el.innerHTML = icon('flag');
   }
 
   // --- Aufnahme und Wiedergabe ---
@@ -574,7 +829,9 @@
     if (!replaying) rec.push([firstClick ? 0 : elapsedMs(), a === 'f' ? 1 : 0, i]);
     if (a === 'f') return toggleFlag(i);
     if (firstClick) { firstClick = false; if (!replaying && !generate(i)) setMessage('mayGuess', {}); startTimer(); }
+    const before = opened;
     if (c.open) chord(i); else reveal(i);
+    if (!gameOver && opened > before) sound(opened - before > 1 ? 'area' : 'open');   // Ende der Runde hat eigene Töne
   }
 
   const makeDemo = () => ({ w: W, h: H, m: M, mines: cells.flatMap((c, i) => c.mine ? [i] : []), ev: rec });
@@ -671,6 +928,9 @@
   function lose(hit) {
     gameOver = true; endedAt = Date.now(); stopTimer();
     setFace('dead');
+    sound('boom');
+    const game = cells;
+    setTimeout(() => { if (cells === game) sound('die'); }, 250);   // Schrei kurz nach der Explosion, nicht mehr nach einem neuen Spiel
     setMessage('lost', {});
     cells.forEach((c, i) => {
       if (c.mine && !c.flag) { c.open = true; drawCell(i); }
@@ -690,48 +950,81 @@
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
     const t = replaying ? replay.e.ms : elapsedMs();
+    const clicks = replaying ? replay.e.demo.ev.length : rec.length;   // jede aufgezeichnete Aktion auf dem Feld
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
     setFace('win');
-    if (mode === 'custom' || replaying) { setMessage('won', { t }); return afterRound(); }
-    checkRank(mode, t, makeDemo());
+    sound('win');
+    if (mode === 'custom' || replaying) { setMessage('won', { t, clicks }); return afterRound(); }
+    checkRank(mode, t, clicks, makeDemo());
   }
 
   // Erst die aktuelle Bestenliste laden, dann den Platz in der Kategorie bestimmen und anzeigen
-  async function checkRank(level, t, demo) {
+  async function checkRank(level, t, clicks, demo) {
     const game = cells;
-    setMessage('won', { t, checking: true });
+    setMessage('won', { t, clicks, checking: true });
     await loadScores();
-    const list = scores[level];   // online, oder die lokale Liste, wenn offline
-    const rank = list.filter(e => e.ms <= t).length + 1;
-    const placed = rank <= TOP;
-    if (cells === game) setMessage('won', { t, rank: placed && rank });   // nur, wenn noch kein neues Spiel läuft
+    // Platz in beiden Listen (online nur, wenn erreichbar); gespeichert wird in jeder, in die die Zeit kommt
+    const rankIn = list => { const r = list.filter(e => e.ms <= t).length + 1; return r <= TOP && r; };
+    const ranks = { local: rankIn(scores.local[level]), online: !!onlineReady() && rankIn(scores.online[level]) };
+    const placed = ranks.local || ranks.online;
+    if (cells === game) setMessage('won', { t, clicks, rank: placed && ranks });   // nur, wenn noch kein neues Spiel läuft
     afterRound(600);
     if (!placed) return;
-    pending = { level, ms: t, demo };
+    pending = { level, logic, ms: t, clicks, demo, local: !!ranks.local, online: !!ranks.online };
     const name = store.get('ms-name');
     if (name) submitScore(name);
     else { nameForm.hidden = false; setTimeout(() => nameInput.focus(), 650); }
   }
 
-  // --- Bestenliste: Top 10 je Stufe, online in Supabase, lokale Kopie als Fallback ---
+  // --- Bestenliste: Top 10 je Stufe, auf diesem Gerät (localStorage) und online in Supabase ---
   // Der öffentliche (publishable/anon) Schlüssel darf im Quelltext stehen: die Tabelle
   // erlaubt per Row Level Security nur Lesen und Hinzufügen (siehe supabase/setup.sql).
   const SUPABASE_URL = 'https://qymwxjcyvwnoxvrebsih.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_AZz_1J7GqPa-mvhzZqoHkg_EtTH00VP';
   const TOP = 10, LEVELS = Object.keys(PRESETS);
-  let scores = {}, online = false, saveFailed = false, pending = null;
+  // online: null, solange noch nicht geladen; false, wenn Supabase nicht erreichbar ist
+  let scores = { local: {}, online: {} }, online = null, saveFailed = false, pending = null;
+  let view = store.get('ms-view') === 'online' ? 'online' : 'local';   // angezeigte Liste, anfangs die lokale
   let newEntry = null;   // { level, name, ms } des gerade gespeicherten Eintrags, wird hervorgehoben
-  // false, solange die Tabelle noch nicht auf ms + demo umgestellt ist (supabase/migrate.sql):
-  // dann nur ganze Sekunden und keine Wiedergaben online
-  let fullSchema = true;
+  // Ausbaustufe der Tabelle, solange sie nicht per supabase/migrate.sql aktualisiert ist:
+  // 4 = alles, 3 = ohne Spielmodus (dann keine Online-Liste für "Nur Logik"), 2 = auch ohne Klicks,
+  // 1 = auch ohne Gerät, 0 = nur ganze Sekunden, ohne Wiedergaben, Gerät und Klicks
+  const COLS = ['name,time,created_at', 'name,time,ms,demo,created_at', 'name,time,ms,demo,device,created_at',
+    'name,time,ms,demo,device,clicks,created_at', 'name,time,ms,demo,device,clicks,logic,created_at'];
+  let schema = COLS.length - 1;
+
+  // Gerät, auf dem gespielt wird: 'mobile', 'tablet' oder 'pc'
+  function deviceType() {
+    const ua = navigator.userAgent;
+    if (/iPad|Tablet|Kindle|Silk|PlayBook/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))
+        || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'tablet';   // iPadOS meldet sich als Mac
+    if (navigator.userAgentData?.mobile || /Mobi|iPhone|iPod|Android/i.test(ua)) return 'mobile';
+    // Unbekannter Browser: nur Touch, kein feiner Zeiger → nach Bildschirmgröße
+    if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches)
+      return Math.min(screen.width, screen.height) < 600 ? 'mobile' : 'tablet';
+    return 'pc';
+  }
+  const DEVICE = deviceType();
+  const ICON = paths => `<svg viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
+  const CLICK_ICON = ICON('<path d="M5 3l14 7-6 2-2 6z"/>');   // Mauszeiger
+  const DEVICE_ICONS = {
+    pc: '<rect x="2" y="3" width="20" height="13" rx="2"/><path d="M8 21h8M12 16v5"/>',
+    tablet: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/>',
+    mobile: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+  };
 
   // Zeiten werden in Millisekunden verglichen und gespeichert (ältere lokale Einträge: t in Sekunden)
   const byTime = (a, b) => a.ms - b.ms || (a.date || '').localeCompare(b.date || '');
-  const normEntry = ({ name, ms, t, date, demo }) => ({ name, ms: ms ?? t * 1000, date, demo });
+  // Klicks: ältere Einträge mit Wiedergabe haben sie in der Aufnahme
+  const normEntry = ({ name, ms, t, date, demo, device, clicks }) =>
+    ({ name, ms: ms ?? t * 1000, date, demo, device, clicks: clicks ?? demo?.ev?.length });
 
-  function readLocal(m) {
-    try { const v = JSON.parse(store.get('ms-top-' + m)); if (Array.isArray(v)) return v.map(normEntry); } catch {}
+  // Lokale Liste je Stufe und Spielmodus; ältere Einträge gehören zu Standard
+  const topKey = (m, lg = logic) => 'ms-top-' + (lg ? 'logic-' : '') + m;
+  function readLocal(m, lg = logic) {
+    try { const v = JSON.parse(store.get(topKey(m, lg))); if (Array.isArray(v)) return v.map(normEntry); } catch {}
+    if (lg) return [];
     const old = readBest(m);   // frühere einzelne Bestzeit übernehmen
     return old ? [{ name: '', ms: old.t * 1000 }] : [];
   }
@@ -743,21 +1036,29 @@
     return r.status === 204 || r.status === 201 ? null : r.json();
   }
 
+  // Online-Liste im aktuellen Spielmodus nutzbar? Ohne Spalte `logic` nur für Standard
+  const onlineReady = () => online && (schema >= 4 || !logic);
+
   async function loadScores() {
+    const lg = logic;
     let shared = null;
     if (SUPABASE_URL) try {
-      const query = m => fullSchema
-        ? `scores?select=name,time,ms,demo,created_at&level=eq.${m}&order=ms.asc.nullslast,time.asc,created_at.asc&limit=${TOP}`
-        : `scores?select=name,time,created_at&level=eq.${m}&order=time.asc,created_at.asc&limit=${TOP}`;
-      try { shared = await Promise.all(LEVELS.map(m => api(query(m)))); }
+      const query = m => `scores?select=${COLS[schema]}&level=eq.${m}` + (schema >= 4 ? `&logic=eq.${lg}` : '')
+        + '&order=' + (schema ? 'ms.asc.nullslast,' : '') + `time.asc,created_at.asc&limit=${TOP}`;
+      for (;;) try { shared = await Promise.all(LEVELS.map(m => api(query(m)))); break; }
       catch (e) {
-        if (!fullSchema || !/HTTP 4/.test(e.message)) throw e;   // nur bei fehlenden Spalten zurückfallen
-        fullSchema = false; shared = await Promise.all(LEVELS.map(m => api(query(m))));
+        if (!schema || !/HTTP 4/.test(e.message)) throw e;   // nur bei fehlenden Spalten zurückfallen
+        schema--;
       }
     } catch {}
+    if (lg !== logic) return;   // Modus inzwischen gewechselt, das neuere Laden gilt
     online = !!shared;
+    if (!onlineReady()) shared = null;
     LEVELS.forEach((m, i) => {
-      scores[m] = shared ? shared[i].map(r => ({ name: r.name, ms: r.ms ?? r.time * 1000, date: r.created_at, demo: r.demo })) : readLocal(m);
+      scores.local[m] = readLocal(m);
+      scores.online[m] = shared
+        ? shared[i].map(r => normEntry({ name: r.name, ms: r.ms, t: r.time, date: r.created_at, demo: r.demo, device: r.device, clicks: r.clicks }))
+        : [];
     });
     showBest();
   }
@@ -769,12 +1070,13 @@
     name = name.trim().slice(0, 16);
     store.set('ms-name', name);
     newEntry = { level: p.level, name, ms: p.ms };
-    const entry = { name, ms: p.ms, date: new Date().toISOString(), demo: p.demo };
-    store.set('ms-top-' + p.level, JSON.stringify([...readLocal(p.level), entry].sort(byTime).slice(0, TOP)));
+    const entry = { name, ms: p.ms, date: new Date().toISOString(), demo: p.demo, device: DEVICE, clicks: p.clicks };
+    if (p.local) store.set(topKey(p.level, p.logic), JSON.stringify([...readLocal(p.level, p.logic), entry].sort(byTime).slice(0, TOP)));
     saveFailed = false;
-    if (online) try {
+    if (p.online) try {
       await api('scores', { method: 'POST', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), ...(fullSchema && { ms: p.ms, demo: p.demo }), name }) });
+        body: JSON.stringify({ level: p.level, time: Math.floor(p.ms / 1000), name,
+          ...(schema >= 1 && { ms: p.ms, demo: p.demo }), ...(schema >= 2 && { device: DEVICE }), ...(schema >= 3 && { clicks: p.clicks }), ...(schema >= 4 && { logic: p.logic }) }) });
     } catch { saveFailed = true; }
     await loadScores();
   }
@@ -786,7 +1088,13 @@
     try { const v = JSON.parse(raw); return typeof v === 'number' ? { t: v } : v; } catch { return null; }
   }
 
-  const scoresEl = $('scores'), nameForm = $('nameForm'), nameInput = $('nameInput'), nameBtn = $('nameBtn');
+  const scoresEl = $('scores'), nameForm = $('nameForm'), nameInput = $('nameInput');
+  const viewBtns = document.querySelectorAll('.views button[data-view]');
+  viewBtns.forEach(b => b.addEventListener('click', () => {
+    view = b.dataset.view;
+    store.set('ms-view', view);
+    showBest();
+  }));
   function showBest() {
     const tb = scoresEl.tBodies[0];
     tb.innerHTML = '';
@@ -794,9 +1102,9 @@
     for (const m of LEVELS) {
       const head = tb.insertRow();
       head.className = 'level' + (m === mode ? ' current' : '');
-      cell(head, '', T(m)).colSpan = 4;
-      const list = scores[m] || [];
-      if (!list.length) cell(tb.insertRow(), 'empty', '–').colSpan = 4;
+      cell(head, '', T(m)).colSpan = 6;
+      const list = scores[view][m] || [];
+      if (!list.length) cell(tb.insertRow(), 'empty', '–').colSpan = 6;
       let marked = false;
       list.forEach((e, i) => {
         const row = tb.insertRow();
@@ -807,7 +1115,20 @@
         }
         cell(row, 'rank', i + 1 + '.');
         cell(row, 'name', e.name || '–').title = e.name || '';
+        const devCell = cell(row, 'device', '');
+        if (DEVICE_ICONS[e.device]) {   // ältere Einträge haben kein Gerät
+          devCell.innerHTML = ICON(DEVICE_ICONS[e.device]);
+          devCell.title = T('device', e.device);
+          devCell.setAttribute('aria-label', devCell.title);
+        }
         cell(row, 'time', fmtTime(e.ms));
+        const clickCell = cell(row, 'clicks', '');
+        if (e.clicks != null) {   // Einträge ohne Wiedergabe von vor der Klickzählung haben keine
+          clickCell.textContent = e.clicks;
+          clickCell.insertAdjacentHTML('beforeend', CLICK_ICON);
+          clickCell.title = T('clicks', e.clicks);
+          clickCell.setAttribute('aria-label', clickCell.title);
+        }
         const playCell = cell(row, 'play', '');
         if (e.demo) {
           const btn = document.createElement('button');
@@ -817,18 +1138,18 @@
         }
       });
     }
-    $('scoresNote').textContent = saveFailed ? T('saveFailed') : online ? '' : T('localOnly');
-    const name = store.get('ms-name');
-    nameBtn.textContent = name ? T('player', name) : T('setName');
-    nameBtn.title = T('changeName');
+    $('scoresNote').textContent = saveFailed ? T('saveFailed') : view === 'online' && online === false ? T('offline') : '';
+    viewBtns.forEach(b => { const on = b.dataset.view === view; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+    $('scoresMode').textContent = T('scoresMode', logic);
   }
 
   // Bestenliste als Overlay: Button, ✕, Klick daneben und Escape
   const overlay = $('scoresOverlay'), scoresBtn = $('scoresBtn');
   function showScores(open) { overlay.hidden = !open; }
-  scoresBtn.addEventListener('click', () => showScores(true));
-  $('closeScores').addEventListener('click', () => showScores(false));
-  overlay.addEventListener('click', e => { if (e.target === overlay) showScores(false); });
+  scoresBtn.addEventListener('click', () => { sound('menu'); showScores(true); });   // wie das Öffnen der Einstellungen
+  const closeScores = () => { sound('close'); showScores(false); };
+  $('closeScores').addEventListener('click', closeScores);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeScores(); });
   $('overlayNewGame').addEventListener('click', () => newGame());
   const refreshBtn = $('refreshScores');
   refreshBtn.addEventListener('click', async () => {
@@ -840,10 +1161,6 @@
     e.preventDefault();
     if (nameInput.value.trim()) submitScore(nameInput.value);
   });
-  nameBtn.addEventListener('click', () => {
-    const n = prompt(T('changeName'), store.get('ms-name') || '');
-    if (n && n.trim()) { store.set('ms-name', n.trim().slice(0, 16)); showBest(); }
-  });
 
   // Bei Wiedergaben läuft die Anzeige mit der Wiedergabe-Uhr (Pause, Tempo)
   const elapsedMs = () => replay ? Math.max(0, Math.round(replayPos() - LEAD)) : Math.round(performance.now() - startTime);
@@ -853,11 +1170,12 @@
     timer = setInterval(() => { timerEl.textContent = '⏱ ' + Math.min(999, elapsed()); }, 250);
   }
   function stopTimer() { clearInterval(timer); timer = null; }
-  function updateMines() { minesEl.textContent = '💣 ' + (M - flags); }
+  function updateMines() { minesEl.innerHTML = icon('mine') + ' ' + (M - flags); }
 
   // --- Eingabe: Maus/Stift reagieren schon beim Drücken, Touch beim Loslassen ---
   // (Touch braucht das Loslassen, um Tippen von Long-Press und Scrollen zu unterscheiden)
-  const cellIndex = e => e.target.dataset?.i === undefined ? -1 : +e.target.dataset.i;
+  // closest: im Stil DOOM liegt das Sprite (<i class="di">) über der Zelle und ist selbst das Ziel
+  const cellIndex = e => { const el = e.target.closest?.('.cell'); return el ? +el.dataset.i : -1; };
   let touch = null;   // { id, i, x, y, timer, done }
 
   boardEl.addEventListener('pointerdown', e => {
@@ -919,16 +1237,55 @@
   $('applyCustom').addEventListener('click', applyCustom);
   window.addEventListener('resize', () => boardEl.style.setProperty('--size', cellSize() + 'px'));
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !overlay.hidden) return showScores(false);
+    if (e.key === 'Escape' && !settingsOverlay.hidden) return closeSettings();
+    if (e.key === 'Escape' && !overlay.hidden) return closeScores();
     if (e.target.matches('input, select, textarea')) return;
     if (e.key === 'r' || e.key === 'F2') newGame();
     if (e.key === 'f') toggleFlagMode();
   });
 
-  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => { setLang(b.dataset.lang); sound('setting'); }));
+
+  // --- Einstellungen (Zahnrad): Lautstärke, Sprache, Schwierigkeit (diffSel), Spielername; gelten sofort ---
+  const settingsOverlay = $('settingsOverlay'), volumeEl = $('volume'), settingsName = $('settingsName');
+  const showVolume = () => { volumeEl.value = volume; $('volumeVal').textContent = volume + ' %'; };
+  function showSettings(open) {
+    if (open) { showVolume(); settingsName.value = store.get('ms-name') || ''; }
+    settingsOverlay.hidden = !open;
+  }
+  $('settingsBtn').addEventListener('click', () => { sound('menu'); showSettings(true); });
+  function closeSettings() { sound('close'); showSettings(false); }
+  $('closeSettings').addEventListener('click', closeSettings);
+  settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) closeSettings(); });
+  volumeEl.addEventListener('input', () => { volume = +volumeEl.value; store.set('ms-volume', volume); showVolume(); });
+  // Hörprobe beim Loslassen (Klassisch hat keinen eigenen Einstellungsklang)
+  volumeEl.addEventListener('change', () => sound(SOUNDS[look].setting ? 'setting' : 'flag'));
+  const logicBtns = document.querySelectorAll('#logicMode button');
+  const showLogic = () => logicBtns.forEach(b => {
+    const on = (b.dataset.logic === '1') === logic;
+    b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+  });
+  logicBtns.forEach(b => b.addEventListener('click', () => {
+    if ((b.dataset.logic === '1') === logic) return;
+    logic = !logic;
+    store.set('ms-logic', logic ? '1' : '0');
+    showLogic();
+    LEVELS.forEach(m => { scores.local[m] = readLocal(m); scores.online[m] = []; });
+    newGame(true);   // anderer Modus: neues Feld, Bestenlisten dieses Modus laden
+    sound('setting');   // wie beim Sprachwechsel, statt des Startklangs
+    loadScores();
+  }));
+  showLogic();
+  document.querySelectorAll('#lookMode button').forEach(b => b.addEventListener('click', () => { setLook(b.dataset.look); sound('setting'); }));
+  setLook(look);
+  settingsName.addEventListener('change', () => {
+    const n = settingsName.value.trim().slice(0, 16);
+    if (n) { store.set('ms-name', n); sound('setting'); }
+    settingsName.value = store.get('ms-name') || '';   // leer lassen behält den bisherigen Namen
+  });
 
   // Start
-  LEVELS.forEach(m => { scores[m] = readLocal(m); });
+  LEVELS.forEach(m => { scores.local[m] = readLocal(m); });
   const savedLang = store.get('ms-lang');
   setLang(I18N[savedLang] ? savedLang : (navigator.language || '').startsWith('de') ? 'de' : 'en');
   const saved = store.get('ms-mode');
@@ -936,7 +1293,7 @@
   customBox.classList.toggle('show', mode === 'custom');
   if (mode === 'custom') applyCustom(); else newGame();
   loadScores();
-  showScores(true);   // beim Laden die Bestenliste zeigen
+  booted = true;
 
   // --- Installierbar als App (PWA) ---
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});

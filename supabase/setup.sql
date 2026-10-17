@@ -11,6 +11,9 @@ create table public.scores (
   time       integer     not null check (time between 0 and 99999),           -- whole seconds
   ms         integer              check (ms between 0 and 99999999),         -- exact time in milliseconds
   demo       jsonb                check (pg_column_size(demo) <= 65536),     -- recorded game for the replay; null = none
+  device     text                 check (device in ('pc', 'mobile', 'tablet')),  -- device the game was played on; null = unknown
+  clicks     integer              check (clicks between 0 and 99999),         -- actions on the board (open, chord, flag)
+  logic      boolean     not null default false,                             -- game mode: true = pure logic, false = standard
   name       text        not null check (char_length(name) between 1 and 16),
   created_at timestamptz not null default now()
 );
