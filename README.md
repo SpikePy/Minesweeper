@@ -12,7 +12,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 - Replays: every game is recorded (each click with its time). A best time stores that recording, and ▶ next to it in the list plays the game back. Below the board you can pause and resume it (⏸/▶), restart it (⏮) and switch the speed between 1×, ½× and ¼×. Click the face to stop a replay
 - Chording: click a number with the matching number of flags to open all its neighbours
 - Touch support: long-press to flag, or switch on the 🚩 button so that taps set and remove flags
-- High-score lists as an overlay that opens after every win and with the 🏆 Best times button: the 10 best times per difficulty, to the millisecond, with player name, the device it was played on (computer, tablet or smartphone), the number of clicks and a replay of the game. Switch between *This device* (kept in the browser) and *Online* (shared through [Supabase](https://supabase.com), the same on every device); the list you picked last is shown next time. A win goes into every list it makes the top 10 of
+- High-score lists as an overlay that opens after every win and with the 🏆 Leaderboard button: the 10 best times per difficulty, to the millisecond, with player name, the device it was played on (computer, tablet or smartphone), the number of clicks and a replay of the game. Switch between *This device* (kept in the browser) and *Online* (shared through [Supabase](https://supabase.com), the same on every device); the list you picked last is shown next time. A win goes into every list it makes the top 10 of
 - Two styles: *Classic* with smileys, emoji icons and bright retro sounds generated in the browser, and *DOOM* with a Doom skull-wall texture, metal-plate fields, Doom faces, a spiked mine, a skull banner as the flag and Doom sounds
 - Settings behind the ⚙️ button next to 🚩: sound volume, language, style, difficulty, game mode and player name
 - Automatic light and dark theme
@@ -28,7 +28,7 @@ Classic Minesweeper in a single HTML file — no build step, no dependencies, wo
 | Open neighbours (chord) | Click a number | Tap a number | |
 | New game | Click the face, or the board once the game is over | Tap the face, or the board once the game is over | `R` or `F2` |
 | Toggle 🚩 mode | | Tap 🚩 | `F` |
-| Watch a best time | ▶ in the best times | Tap ▶ | |
+| Watch a best time | ▶ in the leaderboard | Tap ▶ | |
 
 ## Shared high scores (one-time setup)
 

@@ -323,13 +323,13 @@
       help: 'Left click/tap: open · Right click/long press: set/remove flag · ' +
             'Clicking a number with the matching number of flags opens its neighbours. ' +
             'The first click is always safe; after that, everything follows from the numbers without guessing. ' +
-            'Press ▶ in the best times to watch a replay of that game (with pause, restart and speed 1×, ½×, ¼×).',
+            'Press ▶ in the leaderboard to watch a replay of that game (with pause, restart and speed 1×, ½×, ¼×).',
       lost: 'Boom! You lost.', won: (ms, c) => `You won in ${fmtTime(ms)}${c ? ' with ' + T('clicks', c) : ''}! 🎉`,
-      newBest: r => ' ' + [r.local && `rank ${r.local} on this device`, r.online && `rank ${r.online} online`].filter(Boolean).join(', ').replace('r', 'R') + '!', checking: ' Checking the best times …', scores: '🏆 Best times',
-      topTen: 'Your name for the best times:', yourName: 'Name', save: 'Save',
-      offline: 'Online best times are not reachable', saveFailed: 'Saving online failed',
-      scoreView: 'Best times list', viewLocal: 'This device', viewOnline: 'Online',
-      refresh: 'Reload best times', close: 'Close', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
+      newBest: r => ' ' + [r.local && `rank ${r.local} on this device`, r.online && `rank ${r.online} online`].filter(Boolean).join(', ').replace('r', 'R') + '!', checking: ' Checking the leaderboard …', scores: '🏆 Leaderboard',
+      topTen: 'Your name for the leaderboard:', yourName: 'Name', save: 'Save',
+      offline: 'The online leaderboard is not reachable', saveFailed: 'Saving online failed',
+      scoreView: 'Leaderboard', viewLocal: 'This device', viewOnline: 'Online',
+      refresh: 'Reload leaderboard', close: 'Close', watch: 'Watch replay', replayOf: n => `▶ Replay: ${n}`,
       pause: 'Pause', resume: 'Resume', restartReplay: 'Restart replay', replaySpeed: 'Speed',
       mayGuess: 'So many mines that this board may need a guess.',
       install: 'Install as app',
@@ -555,7 +555,7 @@
 
   // Platten für verdeckte Felder im Stil DOOM, je Feld zufällig (nur Optik, nicht Teil von Demos)
   const PLATES = ['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P10', 'P12'];
-  const PLATE_MAX = { P10: 2, P12: 2 };   // die blutigen höchstens so oft pro Spiel
+  const PLATE_MAX = { P10: .02, P12: .02 };   // die blutigen höchstens auf diesem Anteil der Felder pro Spiel (abgerundet)
   function pickPlates(n) {
     // Felder in zufälliger Reihenfolge belegen, damit die begrenzten Platten nicht immer oben landen
     const order = [...Array(n).keys()];
@@ -564,7 +564,7 @@
     const any = list => list[Math.floor(Math.random() * list.length)];
     for (const i of order) {
       let p = any(PLATES);
-      if (PLATE_MAX[p] && (used[p] = (used[p] || 0) + 1) > PLATE_MAX[p]) p = any(free);
+      if (PLATE_MAX[p] && (used[p] = (used[p] || 0) + 1) > Math.floor(PLATE_MAX[p] * n)) p = any(free);
       out[i] = p;
     }
     return out;
