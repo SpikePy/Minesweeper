@@ -70,7 +70,7 @@
   .game { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
     padding: 12px; max-width: 100%; box-shadow: 0 4px 18px rgba(0,0,0,.06); }
   .status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 12px; }
-  .counter { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.2rem; min-width: 70px; }
+  .counter { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.2rem; min-width: 5.5em; }   /* Platz für "⏱ 123.456" */
   .counter.right { text-align: right; }
   .face { width: 56px; height: 68px; padding: 0; background: var(--panel) center 2px / 48px auto no-repeat;
           image-rendering: pixelated; }
@@ -202,7 +202,7 @@
     <div class="status">
       <div class="counter" id="mines">💣 0</div>
       <button class="face" id="reset" data-i18n-title="newGame" data-i18n-aria="newGame"></button>
-      <div class="counter right" id="timer">⏱ 0</div>
+      <div class="counter right" id="timer">⏱ 0.000</div>
     </div>
     <div class="board-wrap"><div class="board" id="board"></div></div>
   </div>
@@ -478,6 +478,7 @@
     showMessage();
     showBest();
     updateReplayBar();
+    showTimer(shownMs);   // Dezimaltrennzeichen der Sprache
   }
 
   // Meldung als Schlüssel merken, damit sie beim Sprachwechsel neu übersetzt wird
@@ -507,7 +508,7 @@
     cells = Array.from({ length: W * H }, () => ({ mine: false, open: false, flag: false, n: 0 }));
     firstClick = true; gameOver = false; opened = 0; flags = 0;
     setFace('ok'); setMessage(null);
-    timerEl.textContent = '⏱ 0';
+    showTimer(0);
     render();
     updateMines();
     showBest();
@@ -926,7 +927,7 @@
   }
 
   function lose(hit) {
-    gameOver = true; endedAt = Date.now(); stopTimer();
+    gameOver = true; endedAt = Date.now(); stopTimer(); showTimer(elapsedMs());
     setFace('dead');
     sound('boom');
     const game = cells;
@@ -950,6 +951,7 @@
   function win() {
     gameOver = true; endedAt = Date.now(); stopTimer();
     const t = replaying ? replay.e.ms : elapsedMs();
+    showTimer(t);   // genau die Zeit, die gespeichert wird
     const clicks = replaying ? replay.e.demo.ev.length : rec.length;   // jede aufgezeichnete Aktion auf dem Feld
     cells.forEach((c, i) => { if (c.mine && !c.flag) { c.flag = true; drawCell(i); } });
     flags = M; updateMines();
@@ -1164,12 +1166,18 @@
 
   // Bei Wiedergaben läuft die Anzeige mit der Wiedergabe-Uhr (Pause, Tempo)
   const elapsedMs = () => replay ? Math.max(0, Math.round(replayPos() - LEAD)) : Math.round(performance.now() - startTime);
-  const elapsed = () => Math.floor(elapsedMs() / 1000);
+  // Uhr oben rechts mit Millisekunden ("12.345", deutsch "12,345"), bis 999,999 s
+  let shownMs = 0;
+  function showTimer(ms) {
+    shownMs = ms;
+    timerEl.textContent = '⏱ ' + (Math.min(ms, 999999) / 1000).toFixed(3).replace('.', lang === 'de' ? ',' : '.');
+  }
   function startTimer() {
     startTime = performance.now();
-    timer = setInterval(() => { timerEl.textContent = '⏱ ' + Math.min(999, elapsed()); }, 250);
+    const tick = () => { showTimer(elapsedMs()); timer = requestAnimationFrame(tick); };
+    tick();
   }
-  function stopTimer() { clearInterval(timer); timer = null; }
+  function stopTimer() { cancelAnimationFrame(timer); timer = null; }
   function updateMines() { minesEl.innerHTML = icon('mine') + ' ' + (M - flags); }
 
   // --- Eingabe: Maus/Stift reagieren schon beim Drücken, Touch beim Loslassen ---
