@@ -555,7 +555,7 @@
 
   // Platten für verdeckte Felder im Stil DOOM, je Feld zufällig (nur Optik, nicht Teil von Demos)
   const PLATES = ['P01', 'P02', 'P03', 'P04', 'P05', 'P06', 'P07', 'P10', 'P12'];
-  const PLATE_MAX = { P10: 3, P12: 3 };   // die blutigen höchstens so oft pro Spiel
+  const PLATE_MAX = { P10: 2, P12: 2 };   // die blutigen höchstens so oft pro Spiel
   function pickPlates(n) {
     // Felder in zufälliger Reihenfolge belegen, damit die begrenzten Platten nicht immer oben landen
     const order = [...Array(n).keys()];
@@ -1218,6 +1218,7 @@
     flagMode = !flagMode;
     flagBtn.classList.toggle('active', flagMode);
     flagBtn.setAttribute('aria-pressed', flagMode);
+    sound('setting');   // wie ein geänderter Schalter in den Einstellungen
   }
   flagBtn.addEventListener('click', toggleFlagMode);
   diffSel.addEventListener('change', () => {
